@@ -1,0 +1,22 @@
+{
+  "name": "pinbeads",
+  "version": "1.0.0",
+  "description": "等代码的解压时光：照图拼豆 + Claude Code 多窗口进度面板与完成提醒（零依赖）",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "pinbeads",
+    "claude-code",
+    "hooks",
+    "game",
+    "relax"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}
