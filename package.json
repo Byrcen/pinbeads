@@ -15,6 +15,7 @@
     "game",
     "relax"
   ],
+  "author": "Byrcen",
   "license": "MIT",
   "engines": {
     "node": ">=18"

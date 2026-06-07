@@ -263,6 +263,8 @@
     <button class="icon-btn" id="btnGallery">🏆 我的作品</button>
     <button class="icon-btn" id="btnHint">💡 高亮当前色</button>
     <button class="icon-btn active" id="btnMode" data-mode="draw">🖌 绘制</button>
+    <button class="icon-btn" id="btnErase">🧽 橡皮</button>
+    <button class="icon-btn" id="btnCheck">🔍 检查</button>
     <button class="icon-btn" id="btnSound">🔊</button>
     <div id="banner"></div>
   </header>
@@ -426,8 +428,9 @@ function patternFromGrid(name, w, h, hexGrid){
 function hashStr(s){let h=5381;for(let i=0;i<s.length;i++)h=(h*33^s.charCodeAt(i))>>>0;return h.toString(36);}
 
 /* ============================== 全局状态 ============================== */
-const state={ pattern:null, placed:null, view:{scale:20,ox:0,oy:0}, active:0, hint:false, mode:'draw',
-  forging:false, forged:false, anim:null };
+const state={ pattern:null, beads:null, view:{scale:20,ox:0,oy:0}, active:0, hint:false, mode:'draw',
+  erase:false, checkUntil:0, forging:false, forged:false, anim:null };
+function newEmptyBeads(p){ return new Int8Array(p.width*p.height).fill(-1); }
 const board=document.getElementById('board'), bctx=board.getContext('2d');
 const fx=document.getElementById('fx'), fctx=fx.getContext('2d');
 const stage=document.getElementById('stage');
@@ -646,7 +649,7 @@ function tryPlace(cx,cy){
   const p=state.pattern; const i=cellAt(cx,cy); if(i<0) return;
   const c=p.cells[i]; if(c<0) return;             // 图案外的空白格不可放
   if(state.erase){                                 // 橡皮：拔掉这颗豆
-    if(state.beads[i]>=0){ state.beads[i]=-1; Audio.place(); saveProgress(); refreshPalette(); refreshProgress(); }
+    if(state.beads[i]>=0){ state.beads[i]=-1; Audio.place(); draw(); saveProgress(); refreshPalette(); refreshProgress(); }
     return;
   }
   if(state.beads[i]===state.active) return;        // 已是该色，免重复
@@ -675,7 +678,7 @@ function dropLoop(){ draw(); if(Object.keys(drops).length) dropRAF=requestAnimat
 /* ============================== 调色板 / 进度 ============================== */
 function counts(){
   const p=state.pattern, total=new Array(p.palette.length).fill(0), left=new Array(p.palette.length).fill(0);
-  for(let i=0;i<p.cells.length;i++){const c=p.cells[i]; if(c<0)continue; total[c]++; if(!state.placed[i])left[c]++;}
+  for(let i=0;i<p.cells.length;i++){const c=p.cells[i]; if(c<0)continue; total[c]++; if(state.beads[i]!==c)left[c]++;}
   return {total,left};
 }
 function refreshPalette(){
@@ -689,15 +692,17 @@ function refreshPalette(){
   });
 }
 function refreshProgress(){
-  const {total,left}=counts();
-  const T=total.reduce((a,b)=>a+b,0), L=left.reduce((a,b)=>a+b,0);
-  const pct=T? Math.round((T-L)/T*100):0;
+  const p=state.pattern; if(!p) return;
+  let total=0, filled=0;                                   // 进度=填满度（填满即可熨烫）
+  for(let i=0;i<p.cells.length;i++){ if(p.cells[i]>=0){ total++; if(state.beads[i]>=0) filled++; } }
+  const pct=total? Math.round(filled/total*100):0;
   document.getElementById('pbar').style.width=pct+'%';
   document.getElementById('pnum').textContent=pct+'%';
+  updateIronBtn();
 }
 function isComplete(){
   const p=state.pattern;
-  for(let i=0;i<p.cells.length;i++){ if(p.cells[i]>=0 && !state.placed[i]) return false; }
+  for(let i=0;i<p.cells.length;i++){ if(p.cells[i]>=0 && state.beads[i]<0) return false; }
   return true;
 }
 
@@ -854,7 +859,7 @@ function persistNow(){
   if(!state.pattern) return;
   clearTimeout(saveT);
   try{
-    localStorage.setItem('pinbeads:progress:'+state.pattern.id, JSON.stringify({placed:Array.from(state.placed),updatedAt:Date.now()}));
+    localStorage.setItem('pinbeads:progress:'+state.pattern.id, JSON.stringify({beads:Array.from(state.beads),updatedAt:Date.now()}));
     localStorage.setItem('pinbeads:last', state.pattern.id);
     if(String(state.pattern.id).indexOf('img:')===0) localStorage.setItem('pinbeads:imgdef:'+state.pattern.id, JSON.stringify(serializePattern(state.pattern)));
   }catch(_){}
@@ -868,28 +873,38 @@ function removeWip(id){ writeWip(readWip().filter(x=>x.id!==id)); }
 function upsertWip(){
   if(!state.pattern) return;
   const p=state.pattern; let total=0, placed=0;
-  for(let i=0;i<p.cells.length;i++){ if(p.cells[i]>=0){ total++; if(state.placed[i]) placed++; } }
+  for(let i=0;i<p.cells.length;i++){ if(p.cells[i]>=0){ total++; if(state.beads[i]>=0) placed++; } }
   let l=readWip().filter(x=>x.id!==p.id);
-  if(placed>0 && placed<total){ l.unshift({id:p.id,name:p.name,w:p.width,h:p.height,placed,total,thumb:renderThumb(p,88),updatedAt:Date.now()}); }
+  if(placed>0 && placed<total){ l.unshift({id:p.id,name:p.name,w:p.width,h:p.height,placed,total,thumb:renderThumb(p,88,state.beads),updatedAt:Date.now()}); }
   writeWip(l);
 }
 function serializePattern(p){ return {id:p.id,name:p.name,width:p.width,height:p.height,palette:p.palette,cells:Array.from(p.cells)}; }
 function deserializePattern(o){ return {id:o.id,name:o.name,width:o.width,height:o.height,palette:o.palette,cells:Int8Array.from(o.cells)}; }
-function loadProgress(id){ try{const o=JSON.parse(localStorage.getItem('pinbeads:progress:'+id)); return o?Uint8Array.from(o.placed):null;}catch(_){return null;} }
+// 返回 Int8Array（每格放置的颜色 idx，-1 空）；兼容旧存档的 placed(0/1) 格式
+function loadProgress(p){
+  try{
+    const o=JSON.parse(localStorage.getItem('pinbeads:progress:'+p.id)); if(!o) return null;
+    if(o.beads) return Int8Array.from(o.beads);
+    if(o.placed){ const b=newEmptyBeads(p); for(let i=0;i<o.placed.length;i++) if(o.placed[i]) b[i]=p.cells[i]; return b; } // 旧档：放过=正确色
+    return null;
+  }catch(_){ return null; }
+}
 function addToGallery(){
   try{
     const g=JSON.parse(localStorage.getItem('pinbeads:gallery')||'[]');
     const item={id:state.pattern.id, name:state.pattern.name, at:Date.now(),
-      w:state.pattern.width, h:state.pattern.height, thumb:renderThumb(state.pattern,120)};
+      w:state.pattern.width, h:state.pattern.height, thumb:renderThumb(state.pattern,120,state.beads)};
     const idx=g.findIndex(x=>x.id===item.id); if(idx>=0)g.splice(idx,1); g.unshift(item);
     localStorage.setItem('pinbeads:gallery', JSON.stringify(g.slice(0,60)));
     removeWip(state.pattern.id);
   }catch(_){}
 }
-function renderThumb(p, size){
+// beads 给定时画"实际拼成的样子"（含放错色）；否则画图纸目标色
+function renderThumb(p, size, beads){
   const s=Math.max(1,Math.floor(size/Math.max(p.width,p.height)));
   const c=document.createElement('canvas'); c.width=p.width*s; c.height=p.height*s; const x=c.getContext('2d');
-  for(let yy=0;yy<p.height;yy++)for(let xx=0;xx<p.width;xx++){const cc=p.cells[yy*p.width+xx]; if(cc<0)continue;
+  for(let yy=0;yy<p.height;yy++)for(let xx=0;xx<p.width;xx++){const idx=yy*p.width+xx;
+    const cc = beads ? beads[idx] : p.cells[idx]; if(cc<0)continue;
     x.fillStyle=p.palette[cc].hex; x.fillRect(xx*s,yy*s,s,s);}
   return c.toDataURL('image/png');
 }
@@ -898,9 +913,10 @@ function renderThumb(p, size){
 function loadPattern(p, resume=true){
   if(state.pattern && state.pattern.id!==p.id) persistNow();  // 切换前先把当前进度落盘，绝不丢
   state.pattern=p;
-  state.placed= (resume && loadProgress(p.id)) || new Uint8Array(p.width*p.height);
-  if(state.placed.length!==p.width*p.height) state.placed=new Uint8Array(p.width*p.height);
+  state.beads= (resume && loadProgress(p)) || newEmptyBeads(p);
+  if(state.beads.length!==p.width*p.height) state.beads=newEmptyBeads(p);
   state.active=0;
+  state.erase=false; state.checkUntil=0;
   state.forging=false; state.forged=false; state.anim=null;
   document.getElementById('ptnName').textContent=p.name;
   refreshPalette(); refreshProgress(); fit(); updateIronBtn();
@@ -1249,6 +1265,22 @@ document.getElementById('zoom').oninput=e=>{ const old=state.view.scale; state.v
   state.view.oy=cy-(cy-state.view.oy)*(state.view.scale/old); draw(); };
 document.getElementById('btnFit').onclick=fit;
 document.getElementById('btnIron').onclick=()=>Forge.run();
+document.getElementById('btnErase').onclick=e=>{ state.erase=!state.erase;
+  e.currentTarget.classList.toggle('active', state.erase);
+  if(state.erase){ state.mode='draw'; const bm=document.getElementById('btnMode');
+    bm.dataset.mode='draw'; bm.textContent='🖌 绘制'; bm.classList.add('active'); } };
+document.getElementById('btnCheck').onclick=()=>checkBoard();
+function checkBoard(){
+  const p=state.pattern; if(!p) return;
+  let wrong=0, empty=0;
+  for(let i=0;i<p.cells.length;i++){ if(p.cells[i]<0)continue;
+    const b=state.beads[i]; if(b<0) empty++; else if(b!==p.cells[i]) wrong++; }
+  state.checkUntil=performance.now()+3000; draw();
+  setTimeout(draw, 3050);                                  // 到点清除红框
+  if(wrong===0 && empty===0) toast('🎉 全对！点 🔥 熨烫 定型吧');
+  else if(wrong===0) toast(`✅ 放下的都对，还差 <b>${empty}</b> 颗没填`);
+  else toast(`🔍 有 <b>${wrong}</b> 处和图纸不同（红框标出）`);
+}
 
 const uploader=document.getElementById('uploader'), fileInput=document.getElementById('file');
 uploader.onclick=()=>fileInput.click();
