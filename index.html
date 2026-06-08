@@ -815,7 +815,7 @@ function zoomAt(factor, sx, sy){ applyZoom(state.view.scale*factor, sx, sy); dra
 let undoStack=[], stroke=null;
 function beginStroke(){ stroke=[]; }
 function recordChange(i){ if(stroke) stroke.push({i, prev: state.beads[i]}); }
-function endStroke(){ if(stroke && stroke.length){ undoStack.push(stroke); if(undoStack.length>60)undoStack.shift(); updateUndoBtn(); } stroke=null; }
+function endStroke(){ if(stroke && stroke.length){ undoStack.push(stroke); if(undoStack.length>60)undoStack.shift(); updateUndoBtn(); persistNow(); } stroke=null; } // 笔画结束即时落盘，防抖只在涂的过程中合并
 function clearUndo(){ undoStack=[]; stroke=null; updateUndoBtn(); }
 function undo(){
   if(state.forging || state.forged) return;
@@ -915,15 +915,31 @@ function counts(){
   for(let i=0;i<p.cells.length;i++){const c=p.cells[i]; if(c<0)continue; total[c]++; if(state.beads[i]!==c)left[c]++;}
   return {total,left};
 }
-function refreshPalette(){
-  const p=state.pattern, {left}=counts(), el=document.getElementById('palette'); el.innerHTML='';
+function paletteSig(p){ return p.palette.map(c=>c.hex).join('|'); }
+function buildPalette(){   // 建一次：结构(色板)变化时才重搭 DOM
+  const p=state.pattern, el=document.getElementById('palette'); el.innerHTML=''; el.dataset.sig=paletteSig(p);
   p.palette.forEach((col,idx)=>{
-    const d=document.createElement('div'); d.className='swatch'+(idx===state.active?' active':'')+(left[idx]===0?' done':'');
-    d.style.setProperty('--c',col.hex);
-    d.innerHTML=`<div class="chip"></div><div class="num">${idx+1}</div><div class="left">${left[idx]}</div>`;
+    const d=document.createElement('div'); d.className='swatch'; d.style.setProperty('--c',col.hex);
+    d.innerHTML=`<div class="chip"></div><div class="num">${idx+1}</div><div class="left"></div>`;
     d.onclick=()=>{ state.active=idx; refreshPalette(); if(state.hint)draw(); };
     el.appendChild(d);
   });
+  updatePalette();
+}
+function updatePalette(){   // 放豆/橡皮：仅更新选中态/完成态/剩余数，不重建 DOM
+  const p=state.pattern; if(!p) return;
+  const {total,left}=counts(), cells=document.getElementById('palette').children;
+  for(let idx=0; idx<p.palette.length; idx++){ const d=cells[idx]; if(!d) continue;
+    d.classList.toggle('active', idx===state.active);
+    d.classList.toggle('done', total[idx]>0 && left[idx]===0);   // 仅真正用到且拼完的色才 ✓
+    const lf=d.querySelector('.left'); if(lf) lf.textContent=left[idx];
+  }
+}
+function refreshPalette(){
+  if(!state.pattern) return;
+  const el=document.getElementById('palette');
+  if(el.children.length!==state.pattern.palette.length || el.dataset.sig!==paletteSig(state.pattern)) buildPalette();
+  else updatePalette();
 }
 function refreshProgress(){
   const p=state.pattern; if(!p) return;
@@ -1117,7 +1133,7 @@ function persistNow(){
   if(String(state.pattern.id).indexOf('img:')===0) safeSet('pinbeads:imgdef:'+state.pattern.id, JSON.stringify(serializePattern(state.pattern)));
   upsertWip();
 }
-function saveProgress(){ if(!state.pattern) return; clearTimeout(saveT); saveT=setTimeout(persistNow,120); }
+function saveProgress(){ if(!state.pattern) return; clearTimeout(saveT); saveT=setTimeout(persistNow,300); } // 防抖 300ms：连续涂一片只写一次（笔画结束另有即时 flush）
 /* 未完成作品登记表（含上传图，供「继续拼」列表） */
 function readWip(){ try{return JSON.parse(localStorage.getItem('pinbeads:wip')||'[]');}catch(_){return [];} }
 function writeWip(l){ safeSet('pinbeads:wip', JSON.stringify(l.slice(0,40))); }
