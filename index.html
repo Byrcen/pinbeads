@@ -1019,6 +1019,7 @@ const Forge=(function(){
   function run(){
     if(state.forging || !state.pattern || !isComplete() || state.forged) return;
     clearDrops();   // 收尾任何进行中的落下动画，避免熨烫期间双 rAF 与豆子残留弹跳
+    clearUndo();    // 熨烫定型不可逆：清空撤销栈，杜绝跨成型的脏撤销
     state.forging=true; updateIronBtn();
     const sounded={}; const start=performance.now();
     state.anim={fuseX:null,cool:0,press:0,flip:0,peel:0};
