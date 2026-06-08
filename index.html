@@ -80,6 +80,14 @@
   }
   .icon-btn:hover{border-color:var(--accent); color:var(--accent)}
   .icon-btn.active{background:var(--accent); color:#fff; border-color:var(--accent)}
+  .nav-group{display:flex; gap:8px}
+  .tool-group{display:inline-flex; border:1px solid var(--line); border-radius:12px;
+    background:var(--panel-2); overflow:hidden; box-shadow:var(--shadow)}
+  .tool-group .tool{border:0; background:transparent; color:var(--ink); cursor:pointer;
+    padding:7px 12px; font-size:15px; line-height:1; transition:.15s; border-left:1px solid var(--line)}
+  .tool-group .tool:first-child{border-left:0}
+  .tool-group .tool:hover{background:var(--soft)}
+  .tool-group .tool.active{background:var(--accent); color:#fff}
   .iron-btn:disabled{opacity:.4; cursor:not-allowed}
   .iron-btn.ready{background:linear-gradient(120deg,#ff8a3d,#ff5a3d); color:#fff; border-color:#ff6b3d;
     animation:ironpulse 1.3s ease-in-out infinite}
@@ -307,12 +315,16 @@
     <div class="logo">🧩 <b>拼豆</b> 时光</div>
     <div class="sub">等代码的间隙，拼一颗豆</div>
     <div class="spacer"></div>
-    <button class="icon-btn" id="btnPick">🖼 选图案</button>
-    <button class="icon-btn" id="btnGallery">🏆 我的作品</button>
-    <button class="icon-btn" id="btnHint">💡 高亮当前色</button>
-    <button class="icon-btn active" id="btnMode" data-mode="draw">🖌 绘制</button>
-    <button class="icon-btn" id="btnErase">🧽 橡皮</button>
-    <button class="icon-btn" id="btnCheck">🔍 检查</button>
+    <div class="nav-group">
+      <button class="icon-btn nav" id="btnPick">🖼 选图案</button>
+      <button class="icon-btn nav" id="btnGallery">🏆 我的作品</button>
+    </div>
+    <div class="tool-group" role="group" aria-label="工具">
+      <button class="tool" id="btnHint" title="高亮当前色">💡</button>
+      <button class="tool active" id="btnMode" data-mode="draw" title="绘制 / 平移">🖌</button>
+      <button class="tool" id="btnErase" title="橡皮">🧽</button>
+      <button class="tool" id="btnCheck" title="检查">🔍</button>
+    </div>
     <button class="icon-btn" id="btnTheme" title="切换白天/夜间">🌙</button>
     <button class="icon-btn" id="btnSound">🔊</button>
     <div id="banner"></div>
@@ -1360,7 +1372,8 @@ document.getElementById('btnPick').onclick=()=>{ buildPicker(); document.getElem
 document.getElementById('btnGallery').onclick=()=>{ buildShowcase(); document.getElementById('showcase').classList.add('show'); };
 document.getElementById('btnHint').onclick=e=>{ state.hint=!state.hint; e.currentTarget.classList.toggle('active',state.hint); draw(); };
 document.getElementById('btnMode').onclick=e=>{ state.mode=state.mode==='draw'?'pan':'draw';
-  e.currentTarget.dataset.mode=state.mode; e.currentTarget.textContent=state.mode==='draw'?'🖌 绘制':'✋ 平移';
+  e.currentTarget.dataset.mode=state.mode; e.currentTarget.textContent=state.mode==='draw'?'🖌':'✋';
+  e.currentTarget.title=state.mode==='draw'?'绘制 / 平移':'平移 / 绘制';
   e.currentTarget.classList.toggle('active', state.mode==='pan'?false:true); };
 document.getElementById('btnSound').onclick=e=>{ const on=Audio.toggle(); e.currentTarget.textContent=on?'🔊':'🔇'; };
 document.getElementById('zoom').oninput=e=>{ const old=state.view.scale; state.view.scale=+e.target.value;
@@ -1372,7 +1385,7 @@ document.getElementById('btnIron').onclick=()=>Forge.run();
 document.getElementById('btnErase').onclick=e=>{ state.erase=!state.erase;
   e.currentTarget.classList.toggle('active', state.erase);
   if(state.erase){ state.mode='draw'; const bm=document.getElementById('btnMode');
-    bm.dataset.mode='draw'; bm.textContent='🖌 绘制'; bm.classList.add('active'); } };
+    bm.dataset.mode='draw'; bm.textContent='🖌'; bm.classList.add('active'); } };
 document.getElementById('btnCheck').onclick=()=>checkBoard();
 function checkBoard(){
   const p=state.pattern; if(!p) return;
