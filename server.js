@@ -5,7 +5,7 @@ const path = require('path');
 const os = require('os');
 const { emptyState, reduce, pruned } = require('./sessions.js');
 
-const PORT = Number(process.env.PINBEADS_PORT || 4500);
+const PORT = Number(process.env.PINBEADS_PORT || process.env.PORT || 4500);
 let state = emptyState();
 const clients = new Set(); // SSE 响应对象集合
 

@@ -6,6 +6,13 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["server.js"],
       "port": 4500
+    },
+    {
+      "name": "pinbeads-wt",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["server.js"],
+      "port": 4700,
+      "autoPort": true
     }
   ]
 }
