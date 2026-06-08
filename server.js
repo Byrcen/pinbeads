@@ -25,12 +25,15 @@ function walkTitles(dir, map, depth) {
     try {
       // title 在文件靠前处（其后才是超大的 mcp 配置），只读头部即可，避免解析整文件。
       const fd = fs.openSync(full, 'r');
-      const buf = Buffer.alloc(4096);
-      const n = fs.readSync(fd, buf, 0, 4096, 0);
+      const buf = Buffer.alloc(8192);                 // 8KB：降低 title 跨越读取边界而漏读的概率
+      const n = fs.readSync(fd, buf, 0, 8192, 0);
       fs.closeSync(fd);
       const head = buf.toString('utf8', 0, n);
       const sid = (head.match(/"cliSessionId"\s*:\s*"([^"]+)"/) || [])[1];
-      const title = (head.match(/"title"\s*:\s*"([^"]*)"/) || [])[1];
+      // 转义安全：标题里可能含 \" \\ 等转义，用 (?:\\.|[^"\\])* 完整捕获再 JSON 反转义
+      const rawTitle = (head.match(/"title"\s*:\s*"((?:\\.|[^"\\])*)"/) || [])[1];
+      let title = rawTitle;
+      if (rawTitle != null) { try { title = JSON.parse('"' + rawTitle + '"'); } catch (_) {} }
       if (sid && title) map[sid] = title;
     } catch (_) {}
   }
@@ -50,8 +53,9 @@ function broadcast() {
     try { res.write(data); } catch (_) { clients.delete(res); }
   }
 }
-// 标题是异步生成的：定时刷新，有变化就推给客户端
+// 标题是异步生成的：定时刷新，有变化就推给客户端。无客户端时不扫盘（省 idle CPU/IO）。
 setInterval(() => {
+  if (clients.size === 0) return;
   const before = JSON.stringify(titleById);
   refreshTitles();
   if (JSON.stringify(titleById) !== before) broadcast();
@@ -78,6 +82,7 @@ const server = http.createServer((req, res) => {
       'cache-control': 'no-cache',
       connection: 'keep-alive',
     });
+    refreshTitles();                                       // 连接时刷新一次标题（空闲期定时器跳过了扫盘）
     res.write(`data: ${JSON.stringify(snapshot())}\n\n`); // 连接即推全量快照
     clients.add(res);
     const ping = setInterval(() => { try { res.write(': ping\n\n'); } catch (_) {} }, 25000);
@@ -87,15 +92,17 @@ const server = http.createServer((req, res) => {
 
   // CC hooks 投递事件
   if (req.method === 'POST' && url.pathname === '/hook') {
-    let body = '';
-    req.on('data', (c) => { body += c; if (body.length > 1e6) req.destroy(); });
+    let body = '', tooBig = false;
+    req.on('data', (c) => { if (tooBig) return; body += c; if (body.length > 1e6) { tooBig = true; body = ''; } });
     req.on('end', () => {
+      if (tooBig) { res.writeHead(413); return res.end('payload too large'); }  // 明确回 413，不再静默断连
       try {
         const evt = JSON.parse(body || '{}');
         const now = Date.now();
+        const before = JSON.stringify(state.sessions);
         state = pruned(reduce(state, evt, now), now);
-        broadcast();
-      } catch (_) { /* 容错：坏 payload 不影响服务 */ }
+        if (JSON.stringify(state.sessions) !== before) broadcast();   // 状态真的变了才推，省掉无谓全量广播
+      } catch (e) { if (process.env.DEBUG_PINBEADS) console.error('hook parse error:', e.message); }
       res.writeHead(204);
       res.end();
     });
