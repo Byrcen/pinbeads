@@ -6,16 +6,64 @@
 <title>拼豆 · 等代码的解压时光</title>
 <style>
   :root{
-    --bg:#fbf6ee; --panel:#fffdf9; --ink:#4a4036; --muted:#9a8f80;
-    --line:#ece2d3; --accent:#ff8a5b; --accent2:#ffd23f; --ok:#4cae7e; --wait:#f4a82c;
+    /* —— 白天（暖光台面）—— */
+    --desk:#e6d8c0;            /* 台面基色（比盘面深，制造远近层次）*/
+    --desk-glow:#fff4e0;       /* 右上角台灯光晕 */
+    --board-base:#f3ece0;      /* 盘面底板（浅硅胶）*/
+    --panel:#fffdf8;           /* 卡片/面板 */
+    --panel-2:#fff;            /* 更亮的卡片内层（按钮/卡片白底）*/
+    --soft:#fff7ee;            /* 选中/hover 暖底 */
+    --soft-2:#fffaf2;          /* 次级 hover 暖底 */
+    --chip:#f3ecde;            /* 小标签/进度槽底 */
+    --bg:#fbf6ee;              /* 兼容旧引用 */
+    --ink:#4a4036; --muted:#9a8f80;
+    --line:#ece2d3;
+    --accent:#ff8a5b; --accent2:#ffd23f;
+    --ok:#4cae7e; --wait:#f4a82c; --done:#7d8fb3;
     --shadow:0 6px 22px rgba(120,90,50,.10);
+    --shadow-lg:0 14px 40px rgba(120,80,40,.16);
+    /* canvas 用（drawPegboard / 空格 / 豆子 AO / 夜间辉光）*/
+    --peg-base:#e8dcc8;        /* 洞洞板底 */
+    --peg-dot:rgba(140,120,90,.16);
+    --cell-target:243,236,224; /* 空格朝此色混合(=board-base 的 rgb) */
+    --cell-stroke:rgba(150,130,100,.18);
+    --cell-text:rgba(120,100,75,.55);
+    --bead-glow:rgba(0,0,0,0); /* 白天无辉光 */
+  }
+  /* —— 夜间（暖夜灯，非冷科技黑）—— */
+  [data-theme="night"]{
+    --desk:#221b15; --desk-glow:#4a3318;
+    --board-base:#352c23;
+    --panel:#2e2620; --panel-2:#372e26;
+    --soft:#3a2f24; --soft-2:#342a20;
+    --chip:#3d3328;
+    --bg:#221b15;
+    --ink:#f0e6d6; --muted:#a89880;
+    --line:#473c30;
+    --accent:#ff9d6b; --accent2:#ffbf7a;
+    --ok:#5fc08e; --wait:#f0b154; --done:#8d9ec2;
+    --shadow:0 6px 22px rgba(0,0,0,.40);
+    --shadow-lg:0 14px 40px rgba(0,0,0,.50);
+    --peg-base:#352c23;
+    --peg-dot:rgba(255,225,180,.07);
+    --cell-target:53,44,35;
+    --cell-stroke:rgba(255,225,180,.12);
+    --cell-text:rgba(255,225,180,.40);
+    --bead-glow:rgba(255,170,110,.55);
   }
   *{box-sizing:border-box}
   html,body{height:100%}
   body{
     margin:0; font-family:-apple-system,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
-    background:radial-gradient(1200px 600px at 80% -10%, #fff3df, transparent), var(--bg);
+    background:
+      radial-gradient(1100px 720px at 82% -12%, var(--desk-glow), transparent 60%),
+      var(--desk);
     color:var(--ink); overflow:hidden;
+    transition:background-color .28s ease, color .28s ease;
+  }
+  /* 主题切换时大面积换色平滑过渡（克制：仅颜色相关属性）*/
+  header, aside, main, .toolbar, .palette, .scard, .pgroup, .sheet, .swatch, .icon-btn{
+    transition:background-color .28s ease, color .28s ease, border-color .28s ease, box-shadow .28s ease;
   }
   .app{display:grid; grid-template-columns:1fr 300px; grid-template-rows:auto 1fr; height:100vh}
   header{
@@ -265,6 +313,7 @@
     <button class="icon-btn active" id="btnMode" data-mode="draw">🖌 绘制</button>
     <button class="icon-btn" id="btnErase">🧽 橡皮</button>
     <button class="icon-btn" id="btnCheck">🔍 检查</button>
+    <button class="icon-btn" id="btnTheme" title="切换白天/夜间">🌙</button>
     <button class="icon-btn" id="btnSound">🔊</button>
     <div id="banner"></div>
   </header>
@@ -426,6 +475,28 @@ function patternFromGrid(name, w, h, hexGrid){
   return { id, name, width:w, height:h, palette, cells };
 }
 function hashStr(s){let h=5381;for(let i=0;i<s.length;i++)h=(h*33^s.charCodeAt(i))>>>0;return h.toString(36);}
+
+/* ============================== 主题（白天/夜间）============================== */
+const THEME_KEY='pinbeads:theme';
+function systemPrefersNight(){ try{ return matchMedia('(prefers-color-scheme: dark)').matches; }catch(_){ return false; } }
+function currentTheme(){ return document.documentElement.getAttribute('data-theme')==='night'?'night':'day'; }
+function applyTheme(t, persist){
+  document.documentElement.setAttribute('data-theme', t==='night'?'night':'day');
+  const btn=document.getElementById('btnTheme'); if(btn) btn.textContent = t==='night'?'☀️':'🌙';
+  if(persist){ try{ localStorage.setItem(THEME_KEY, t); }catch(_){} }
+  if(typeof applyThemeVars==='function') applyThemeVars();   // 刷新 canvas 取色（Task 3 定义）
+  if(typeof draw==='function') draw();                       // 重绘盘面以应用新色
+}
+(function initTheme(){
+  let saved=null; try{ saved=localStorage.getItem(THEME_KEY); }catch(_){}
+  const t = saved || (systemPrefersNight()?'night':'day');
+  document.documentElement.setAttribute('data-theme', t);    // DOM 已就绪前先定 html 属性
+  // 未手动设置过时，跟随系统变化
+  try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e=>{
+    let s=null; try{ s=localStorage.getItem(THEME_KEY); }catch(_){}
+    if(!s) applyTheme(e.matches?'night':'day', false);
+  }); }catch(_){}
+})();
 
 /* ============================== 全局状态 ============================== */
 const state={ pattern:null, beads:null, view:{scale:20,ox:0,oy:0}, active:0, hint:false, mode:'draw',
@@ -1297,6 +1368,11 @@ const _place=Audio.place; Audio.place=function(){ FocusGuard.beat(); return _pla
 
 /* ============================== 启动 ============================== */
 function boot(){
+  (function(){
+    applyTheme(currentTheme(), false);   // 同步按钮图标 + 首次 applyThemeVars
+    const tb=document.getElementById('btnTheme');
+    if(tb) tb.onclick=()=> applyTheme(currentTheme()==='night'?'day':'night', true);
+  })();
   resizeCanvas();
   CCPanel.connect();
   const last=localStorage.getItem('pinbeads:last');
