@@ -224,6 +224,16 @@
   .seg button.on{background:var(--accent); color:#fff}
   .x{position:absolute; top:14px; right:18px; cursor:pointer; color:var(--muted); font-size:22px; line-height:1}
 
+  /* 帮助浮层：快捷键 & 操作 */
+  kbd{display:inline-block; min-width:18px; padding:2px 7px; border:1px solid var(--line); border-bottom-width:2px;
+    border-radius:7px; background:#fff; font:600 12px ui-monospace,SFMono-Regular,monospace; color:var(--ink); text-align:center}
+  .help-sec{margin:16px 0 4px; font-size:13px; font-weight:700; color:var(--accent)}
+  .help-row{display:grid; grid-template-columns:180px 1fr; gap:12px; align-items:center; padding:7px 2px;
+    border-top:1px solid var(--line); font-size:13.5px}
+  .help-row .keys{display:flex; gap:5px; flex-wrap:wrap; align-items:center; color:var(--muted)}
+  .help-row .txt{color:var(--ink)}
+  @media (max-width:520px){ .help-row{grid-template-columns:1fr; gap:4px} }
+
   /* ===== 作品展示墙（全屏洞洞板空间） ===== */
   #showcase{
     position:fixed; inset:0; z-index:60; display:none; flex-direction:column;
@@ -334,10 +344,12 @@
       <button class="tool" id="btnHint" title="高亮当前色">💡</button>
       <button class="tool active" id="btnMode" data-mode="draw" title="绘制 / 平移">🖌</button>
       <button class="tool" id="btnErase" title="橡皮">🧽</button>
-      <button class="tool" id="btnCheck" title="检查">🔍</button>
+      <button class="tool" id="btnCheck" title="检查（点一下全图找错）">🔍</button>
+      <button class="tool" id="btnLiveCheck" title="实时纠错（放错即标红点）">👁</button>
     </div>
     <button class="icon-btn" id="btnTheme" title="切换白天/夜间">🌙</button>
     <button class="icon-btn" id="btnSound">🔊</button>
+    <button class="icon-btn" id="btnHelp" title="快捷键 & 操作帮助（按 ?）">❓</button>
     <div id="banner"></div>
   </header>
 
@@ -436,6 +448,32 @@
   </div>
 </div>
 
+<div class="modal" id="helpModal">
+  <div class="sheet" style="width:min(560px,92vw)">
+    <span class="x" data-close>×</span>
+    <h2>⌨️ 快捷键 & 操作</h2>
+    <div class="desc">鼠标点调色板永远能选任意颜色；下面这些让手更省事。</div>
+
+    <div class="help-sec">🖐 手势 / 鼠标</div>
+    <div class="help-row"><span class="keys"><kbd>点</kbd><kbd>拖拽</kbd></span><span class="txt">放豆 / 连续涂一片</span></div>
+    <div class="help-row"><span class="keys"><kbd>滚轮</kbd><kbd>触控板</kbd><kbd>双指</kbd></span><span class="txt">以光标为中心缩放</span></div>
+    <div class="help-row"><span class="keys"><kbd>空格</kbd>+拖拽 · <kbd>✋平移</kbd></span><span class="txt">移动画面</span></div>
+
+    <div class="help-sec">⌨️ 键盘</div>
+    <div class="help-row"><span class="keys"><kbd>1</kbd>…<kbd>9</kbd><kbd>0</kbd></span><span class="txt">选颜色；<b>连按就是多位数</b> —— <kbd>1</kbd><kbd>2</kbd> = 12 号，够得到 10 号以上的色</span></div>
+    <div class="help-row"><span class="keys"><kbd>[</kbd><kbd>]</kbd> · <kbd>←</kbd><kbd>→</kbd></span><span class="txt">上 / 下一个颜色（首尾回绕）</span></div>
+    <div class="help-row"><span class="keys"><kbd>E</kbd></span><span class="txt">橡皮（拔豆）</span></div>
+    <div class="help-row"><span class="keys"><kbd>H</kbd></span><span class="txt">高亮当前颜色的所有格子</span></div>
+    <div class="help-row"><span class="keys"><kbd>F</kbd></span><span class="txt">适配画面</span></div>
+    <div class="help-row"><span class="keys"><kbd>Ctrl/⌘</kbd>+<kbd>Z</kbd></span><span class="txt">撤销上一步</span></div>
+    <div class="help-row"><span class="keys"><kbd>?</kbd> · <kbd>Esc</kbd></span><span class="txt">打开本帮助 / 关闭弹窗</span></div>
+
+    <div class="help-sec">🎛 两种模式</div>
+    <div class="help-row"><span class="keys">😌 无忧</span><span class="txt">拿错色不会放进去，闭着眼也拼不错（默认）</span></div>
+    <div class="help-row"><span class="keys">🎨 自由</span><span class="txt">可放错色，再用 🔍 检查 找出和图纸不符的格子</span></div>
+  </div>
+</div>
+
 <script>
 /* ============================== 内置图案库 ============================== */
 const PATTERNS = [
@@ -527,7 +565,7 @@ function applyTheme(t, persist){
 
 /* ============================== 全局状态 ============================== */
 const state={ pattern:null, beads:null, view:{scale:20,ox:0,oy:0}, active:0, hint:false, mode:'draw',
-  erase:false, checkUntil:0, forging:false, forged:false, anim:null, guided:true };
+  erase:false, checkUntil:0, liveCheck:false, forging:false, forged:false, anim:null, guided:true };
 function newEmptyBeads(p){ return new Int8Array(p.width*p.height).fill(-1); }
 const board=document.getElementById('board'), bctx=board.getContext('2d');
 const fx=document.getElementById('fx'), fctx=fx.getContext('2d');
@@ -668,7 +706,10 @@ function draw(){
             renderOne(); bctx.restore();
           }
         } else renderOne();
-        if(now<state.checkUntil && b!==c) markWrong(px,py,s);   // “检查”时高亮放错的格
+        if(b!==c){                                   // 放错色：检查中→红框；实时纠错→小红点
+          if(now<state.checkUntil) markWrong(px,py,s);
+          else if(state.liveCheck) markWrongLive(px,py,s);
+        }
       }else{
         if(drops[i]!=null) delete drops[i];   // 自愈：撤销/清空让格子空了，清掉残留落下动画，避免 dropLoop 空转
         const isHint = hintColor && hex===hintColor;
@@ -774,6 +815,13 @@ function markWrong(px,py,s){
   roundRect(px+s*0.06,py+s*0.06,s*0.88,s*0.88,s*0.28); bctx.stroke();
   bctx.fillStyle='rgba(232,40,40,.95)';
   bctx.beginPath(); bctx.arc(px+s*0.82, py+s*0.18, s*0.13, 0,7); bctx.fill();
+  bctx.restore();
+}
+// 实时纠错：放错的格右上角一个低调小红点（带白边更清晰）
+function markWrongLive(px,py,s){
+  bctx.save();
+  bctx.fillStyle='#fff'; bctx.beginPath(); bctx.arc(px+s*0.8, py+s*0.2, s*0.13, 0,7); bctx.fill();
+  bctx.fillStyle='rgba(232,40,40,.95)'; bctx.beginPath(); bctx.arc(px+s*0.8, py+s*0.2, s*0.1, 0,7); bctx.fill();
   bctx.restore();
 }
 
@@ -1585,6 +1633,7 @@ document.getElementById('btnMode').onclick=e=>{ state.mode=state.mode==='draw'?'
   e.currentTarget.title=state.mode==='draw'?'绘制 / 平移':'平移 / 绘制';
   e.currentTarget.classList.toggle('active', state.mode==='pan'?false:true); };
 document.getElementById('btnSound').onclick=e=>{ const on=Audio.toggle(); e.currentTarget.textContent=on?'🔊':'🔇'; };
+document.getElementById('btnHelp').onclick=()=>document.getElementById('helpModal').classList.add('show');
 document.getElementById('zoom').oninput=e=>{ applyZoom(+e.target.value, stage.clientWidth/2, stage.clientHeight/2); draw(); };
 document.getElementById('btnFit').onclick=fit;
 document.getElementById('btnIron').onclick=()=>Forge.run();
@@ -1602,11 +1651,18 @@ function setErase(v){ state.erase=v;
     bm.dataset.mode='draw'; bm.textContent='🖌'; bm.classList.add('active'); } }   // 图标态（保留新顶栏风格）
 document.getElementById('btnErase').onclick=()=>setErase(!state.erase);
 document.getElementById('btnCheck').onclick=()=>checkBoard();
+document.getElementById('btnLiveCheck').onclick=e=>{ state.liveCheck=!state.liveCheck;
+  e.currentTarget.classList.toggle('active', state.liveCheck);
+  const s=loadSettings(); s.liveCheck=state.liveCheck; saveSettings(s); draw();
+  toast(state.liveCheck?'👁 实时纠错已开：放错会标小红点':'已关闭实时纠错'); };
 // 无忧模式 ⇄ 自由模式：无忧下拿错色不会放进去（拼不出错），自由下可放错并用「检查」找茬
 function syncGuidedUI(){ const b=document.getElementById('btnGuided'); if(!b)return;
   b.textContent = state.guided? '😌 无忧模式' : '🎨 自由模式';
   b.classList.toggle('active', state.guided);
+  // 自由模式才显示「检查 / 实时纠错」（无忧模式拼不出错，无需）
   const chk=document.getElementById('btnCheck'); if(chk) chk.style.display = state.guided? 'none' : '';
+  const lv=document.getElementById('btnLiveCheck'); if(lv){ lv.style.display = state.guided? 'none' : '';
+    lv.classList.toggle('active', state.liveCheck); }
 }
 document.getElementById('btnGuided').onclick=()=>{ state.guided=!state.guided;
   const s=loadSettings(); s.guided=state.guided; saveSettings(s); syncGuidedUI(); };
@@ -1620,11 +1676,13 @@ function selectColor(idx){ const p=state.pattern; if(!p||idx<0||idx>=p.palette.l
 function cycleColor(dir){ const p=state.pattern; if(!p)return; const n=p.palette.length; selectColor((state.active+dir+n)%n); }
 document.addEventListener('keydown', e=>{
   if(e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+  if(e.key==='Escape'){ closeModals(); document.getElementById('showcase').classList.remove('show'); return; }
   if((e.ctrlKey||e.metaKey) && (e.key==='z'||e.key==='Z')){ e.preventDefault(); undo(); return; }
   if(e.code==='Space'){ if(!spacePan){ spacePan=true; document.body.style.cursor='grab'; } e.preventDefault(); return; }
   const modalOpen=document.querySelector('.modal.show')||document.getElementById('showcase').classList.contains('show');
   if(modalOpen || !state.pattern) return;
   const k=e.key;
+  if(k==='?'){ document.getElementById('helpModal').classList.add('show'); return; }
   if(k>='0' && k<='9'){                       // 连按数字 = 多位色号：先按 1 再按 2 → 12 号色
     numBuf+=k; clearTimeout(numTimer); numTimer=setTimeout(()=>numBuf='', 800);
     let n=parseInt(numBuf,10);
@@ -1679,6 +1737,7 @@ function boot(){
   resizeCanvas();
   CCPanel.connect();
   state.guided = loadSettings().guided!==false;   // 默认无忧模式
+  state.liveCheck = loadSettings().liveCheck===true;  // 默认关
   syncGuidedUI();
   const last=localStorage.getItem('pinbeads:last');
   let restored=false;
@@ -1689,7 +1748,7 @@ function boot(){
   }
   if(!restored) loadPattern(decodePattern(PATTERNS[0]));
   if(!localStorage.getItem('pinbeads:welcomed')){ localStorage.setItem('pinbeads:welcomed','1');
-    setTimeout(()=>toast('点选一个颜色，把对应编号的格子点亮 ✨'),600); }
+    setTimeout(()=>toast('点颜色 → 点亮对应编号的格子 ✨ 按 <b>?</b> 看全部快捷键'),600); }
   // 首屏：等布局稳定后再适配一次，避免盘面卡在左上角小尺寸
   requestAnimationFrame(()=>requestAnimationFrame(()=>{ if(state.pattern) fit(); }));
 }
