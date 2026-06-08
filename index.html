@@ -1092,16 +1092,21 @@ function convertImage(img){
 function loadSettings(){ try{return JSON.parse(localStorage.getItem('pinbeads:settings'))||{};}catch(_){return{};} }
 function saveSettings(s){ safeSet('pinbeads:settings',JSON.stringify(s)); }
 // 写 localStorage 的统一兜底：配额满时先丢最旧的缩略图再重试，仍失败给一次温和提示（不再静默吞掉）
-let quotaWarned=false;
+let quotaWarnedAt=0;
 function safeSet(key,val){
-  try{ localStorage.setItem(key,val); return true; }
-  catch(e){
-    try{
-      const g=JSON.parse(localStorage.getItem('pinbeads:gallery')||'[]'); if(g.length>20) localStorage.setItem('pinbeads:gallery',JSON.stringify(g.slice(0,20)));
-      const w=JSON.parse(localStorage.getItem('pinbeads:wip')||'[]'); if(w.length>15) localStorage.setItem('pinbeads:wip',JSON.stringify(w.slice(0,15)));
-      localStorage.setItem(key,val); return true;
-    }catch(_){ if(!quotaWarned){ quotaWarned=true; try{toast('💾 本地存储快满了，老作品缩略图可能存不下，去作品墙删几张吧');}catch(__){} } return false; }
+  try{ localStorage.setItem(key,val); return true; }catch(e){}
+  // 配额超限：反复削减老作品/缩略图后重试（每轮砍 40%），优先保住当前要写的 key（如进度）
+  const shrink=(k)=>{ try{ const a=JSON.parse(localStorage.getItem(k)||'[]');
+    if(Array.isArray(a)&&a.length){ localStorage.setItem(k, JSON.stringify(a.slice(0, Math.floor(a.length*0.6)))); return true; } }catch(_){} return false; };
+  for(let i=0;i<12;i++){
+    const trimmed = shrink('pinbeads:gallery') | shrink('pinbeads:wip');
+    try{ localStorage.setItem(key,val); return true; }catch(_){}
+    if(!trimmed) break;   // 没有可削减的旧数据了
   }
+  const now=Date.now();
+  if(now-quotaWarnedAt>60000){ quotaWarnedAt=now;   // 超限提醒去重：每分钟最多一次
+    try{toast('💾 本地存储空间不足，已自动清理部分旧作品；仍存不下请去作品墙手动删除');}catch(__){} }
+  return false;
 }
 let saveT=0;
 function persistNow(){
@@ -1617,8 +1622,13 @@ uploader.addEventListener('dragover',e=>{e.preventDefault();uploader.classList.a
 uploader.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f)handleFile(f); });
 document.getElementById('sizeSeg').addEventListener('click',e=>{ if(e.target.dataset.size){ gridSize=+e.target.dataset.size;
   document.querySelectorAll('#sizeSeg button').forEach(b=>b.classList.toggle('on',b===e.target)); }});
-function handleFile(f){ const img=new Image(); img.onload=()=>{ const p=convertImage(img); loadPattern(p,false); saveProgress(); closeModals(); };
-  img.src=URL.createObjectURL(f); }
+function handleFile(f){
+  if(!f || (f.type && f.type.indexOf('image/')!==0)){ toast('请选择图片文件 🖼'); return; }
+  const img=new Image(); const url=URL.createObjectURL(f);
+  img.onload=()=>{ try{ const p=convertImage(img); loadPattern(p,false); saveProgress(); closeModals(); }
+    catch(_){ toast('这张图处理失败了，换一张试试'); } finally{ URL.revokeObjectURL(url); } };
+  img.onerror=()=>{ URL.revokeObjectURL(url); toast('图片加载失败，请检查文件是否损坏'); };  // 非图片/坏图：降级提示，不卡弹窗
+  img.src=url; }
 
 const _place=Audio.place; Audio.place=function(){ FocusGuard.beat(); return _place.apply(Audio,arguments); };
 
@@ -1636,7 +1646,8 @@ function boot(){
   const last=localStorage.getItem('pinbeads:last');
   let restored=false;
   if(last){
-    if(last.indexOf('img:')===0){ try{const def=JSON.parse(localStorage.getItem('pinbeads:imgdef:'+last)); if(def){loadPattern(deserializePattern(def)); restored=true;}}catch(_){}}
+    if(last.indexOf('img:')===0){ try{const def=JSON.parse(localStorage.getItem('pinbeads:imgdef:'+last)); if(def){loadPattern(deserializePattern(def)); restored=true;}}catch(_){}
+      if(!restored){ setTimeout(()=>toast('上次的自定义图片已失效，已为你换上默认图案'),600); } }   // 静默降级 → 给个提示
     else { const def=PATTERNS.find(d=>d.id===last); if(def){loadPattern(decodePattern(def)); restored=true;} }
   }
   if(!restored) loadPattern(decodePattern(PATTERNS[0]));
