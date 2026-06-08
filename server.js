@@ -99,9 +99,8 @@ const server = http.createServer((req, res) => {
       try {
         const evt = JSON.parse(body || '{}');
         const now = Date.now();
-        const before = JSON.stringify(state.sessions);
         state = pruned(reduce(state, evt, now), now);
-        if (JSON.stringify(state.sessions) !== before) broadcast();   // 状态真的变了才推，省掉无谓全量广播
+        broadcast();   // 每个 hook 都推：lastEventAt 必变，"变化才推"无意义；前端已增量 tick，推送很廉价
       } catch (e) { if (process.env.DEBUG_PINBEADS) console.error('hook parse error:', e.message); }
       res.writeHead(204);
       res.end();

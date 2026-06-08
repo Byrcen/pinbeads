@@ -1347,7 +1347,7 @@ const CCPanel=(function(){
     if(pop.hidden){ buildFilter(); pop.hidden=false; } else { pop.hidden=true; } }
   function connect(){
     const es=new EventSource('/events');
-    es.onopen=()=>document.getElementById('connDot').classList.add('on');
+    es.onopen=()=>{ document.getElementById('connDot').classList.add('on'); firstSnapshot=true; };  // 每次(重)连后的首帧都是同步快照，抑制其提醒
     es.onerror=()=>document.getElementById('connDot').classList.remove('on');
     es.onmessage=ev=>{ let sessions={}; try{sessions=JSON.parse(ev.data);}catch(_){return;}
       render(sessions);
