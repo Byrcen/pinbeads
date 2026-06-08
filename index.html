@@ -1196,6 +1196,7 @@ function loadPattern(p, resume=true){
 /* ============================== CC 联动面板（SSE） ============================== */
 const CCPanel=(function(){
   let prev={}, current={};
+  let lastSig=null, firstSnapshot=true;   // 增量渲染指纹 + 首帧抑制提醒
   let expanded=new Set();
   try{ expanded=new Set(JSON.parse(localStorage.getItem('pinbeads:expanded')||'[]')); }catch(_){}
   function persist(){ try{ localStorage.setItem('pinbeads:expanded', JSON.stringify([...expanded])); }catch(_){} }
@@ -1220,43 +1221,60 @@ const CCPanel=(function(){
   function fmtAgo(ts){const d=(Date.now()-ts)/1000; if(d<5)return'刚刚'; if(d<60)return Math.floor(d)+'秒前'; if(d<3600)return Math.floor(d/60)+'分前'; return Math.floor(d/3600)+'时前';}
   function fmtDur(ms){const s=Math.floor(ms/1000); const m=Math.floor(s/60); return m? `${m}分${s%60}秒` : `${s}秒`;}
 
+  function metaHTML(s){   // 易变文本（活跃/工具次数/耗时/几秒前）——tick 时原地刷新这一段即可
+    const dur=s.completedAt? fmtDur(s.completedAt-s.startedAt) : fmtDur(Date.now()-s.startedAt);
+    return `${s.state==='running'?'<span><span class="pulse"></span>活跃</span>':''}`
+      +`<span>🔧 ${s.toolCalls} 次</span><span>⏱ ${dur}</span><span>${fmtAgo(s.lastEventAt)}</span>`;
+  }
   function sessionCard(s){
     const d=document.createElement('div'); d.className='scard'; d.id='sc-'+s.id;
     const label={running:'运行中',waiting:'等你输入',done:'已完成'}[s.state]||s.state;
-    const dur=s.completedAt? fmtDur(s.completedAt-s.startedAt) : fmtDur(Date.now()-s.startedAt);
     const name = s.title ? esc(s.title) : '#'+esc(String(s.id).slice(-4));
-    d.innerHTML=`<div class="proj"><span class="stitle" title="${name}">${name}</span><span class="pill ${s.state}">${label}</span></div>
-      <div class="meta">
-        ${s.state==='running'?'<span><span class="pulse"></span>活跃</span>':''}
-        <span>🔧 ${s.toolCalls} 次</span>
-        <span>⏱ ${dur}</span>
-        <span>${fmtAgo(s.lastEventAt)}</span>
-      </div>`;
+    d.innerHTML=`<div class="proj"><span class="stitle" title="${name}">${name}</span><span class="pill ${s.state}">${label}</span></div>`
+      +`<div class="meta">${metaHTML(s)}</div>`;
     return d;
   }
 
+  // 易变文本原地刷新（结构未变时走这条，保住滚动位置/筛选框焦点/展开态，不重建 DOM）
+  function tick(arr){
+    for(const s of arr){ const c=document.getElementById('sc-'+s.id); if(!c)continue;
+      const m=c.querySelector('.meta'); if(m) m.innerHTML=metaHTML(s); }
+  }
   function render(sessions){
     current=sessions;
-    const el=document.getElementById('sessions'); const hint=document.getElementById('emptyHint');
-    el.querySelectorAll('.pgroup').forEach(n=>n.remove());
-    el.querySelectorAll('.filter-note').forEach(n=>n.remove());
+    const el=document.getElementById('sessions'), hint=document.getElementById('emptyHint');
     updateFilterBtn(); updateActiveBtn();
     const rawCount=Object.keys(sessions).length;
     let arr=Object.values(sessions);
     if(activeOnly) arr=arr.filter(isActive);
-    if(rawCount===0){ if(hint)hint.style.display='block'; return; }
+    // 先算出本次的"结构"：分支 + 分组 + 各组有序 [id:state]
+    let branch, names=[], groups={};
+    if(rawCount===0) branch='empty';
+    else if(arr.length===0) branch='noactive';
+    else{
+      for(const s of arr){ (groups[s.project]=groups[s.project]||[]).push(s); }
+      names=Object.keys(groups).sort((a,b)=>
+        Math.max(...groups[b].map(s=>s.lastEventAt)) - Math.max(...groups[a].map(s=>s.lastEventAt))).filter(isShown);
+      for(const n of names) groups[n].sort((a,b)=>b.lastEventAt-a.lastEventAt);
+      branch = names.length===0? 'nofollow' : 'groups';
+    }
+    const sig = branch!=='groups' ? branch
+      : names.map(n=>n+'|'+groups[n].map(s=>s.id+':'+s.state).join(',')).join(';')
+        + '#exp:'+[...expanded].filter(n=>names.includes(n)).sort().join(',');
+    // 结构未变：分组态只刷新易变文本，其余分支 DOM 已正确，直接返回
+    if(sig===lastSig){ if(branch==='groups' && el.querySelector('.pgroup')) tick(arr); return; }
+    lastSig=sig;
+    // —— 结构变了：重建 ——
+    el.querySelectorAll('.pgroup').forEach(n=>n.remove());
+    el.querySelectorAll('.filter-note').forEach(n=>n.remove());
+    if(branch==='empty'){ if(hint)hint.style.display='block'; return; }
     if(hint)hint.style.display='none';
-    if(arr.length===0){ const note=document.createElement('div'); note.className='filter-note';
+    if(branch==='noactive'){ const note=document.createElement('div'); note.className='filter-note';
       note.textContent='当前没有正在处理的会话。'; el.appendChild(note); return; }
-    // 按项目分组
-    const groups={}; for(const s of arr){ (groups[s.project]=groups[s.project]||[]).push(s); }
-    let names=Object.keys(groups).sort((a,b)=>
-      Math.max(...groups[b].map(s=>s.lastEventAt)) - Math.max(...groups[a].map(s=>s.lastEventAt)));
-    names=names.filter(isShown);
-    if(names.length===0){ const note=document.createElement('div'); note.className='filter-note';
+    if(branch==='nofollow'){ const note=document.createElement('div'); note.className='filter-note';
       note.textContent='筛选中：关注的项目暂无活动。点「筛选」调整。'; el.appendChild(note); return; }
     for(const name of names){
-      const list=groups[name].sort((a,b)=>b.lastEventAt-a.lastEventAt);
+      const list=groups[name];
       const cnt={running:0,waiting:0,done:0};
       for(const s of list) cnt[s.state]=(cnt[s.state]||0)+1;
       const open=expanded.has(name);
@@ -1315,8 +1333,10 @@ const CCPanel=(function(){
     es.onopen=()=>document.getElementById('connDot').classList.add('on');
     es.onerror=()=>document.getElementById('connDot').classList.remove('on');
     es.onmessage=ev=>{ let sessions={}; try{sessions=JSON.parse(ev.data);}catch(_){return;}
-      render(sessions); diffAlert(sessions); prev=sessions; };
-    // 定时重渲染：让闲置会话淡出、耗时/“刚刚”等文字随时间更新
+      render(sessions);
+      if(!firstSnapshot) diffAlert(sessions);   // 首帧(刷新/重连后的全量快照)不补弹历史 等待/完成 提醒
+      firstSnapshot=false; prev=sessions; };
+    // 定时重渲染：让闲置会话淡出、耗时/“刚刚”等文字随时间更新（结构没变时仅 tick 文本）
     setInterval(()=>render(current), 5000);
   }
   return { connect, render, toggle, expand, toggleFilterUI, setActiveOnly, isActiveOnly:()=>activeOnly,
