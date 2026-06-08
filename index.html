@@ -327,6 +327,7 @@
       <button class="icon-btn nav" id="btnPick">🖼 选图案</button>
       <button class="icon-btn nav" id="btnGallery">🏆 我的作品</button>
     </div>
+    <button class="icon-btn active" id="btnGuided">😌 无忧模式</button>
     <div class="tool-group" role="group" aria-label="工具">
       <button class="tool" id="btnHint" title="高亮当前色">💡</button>
       <button class="tool active" id="btnMode" data-mode="draw" title="绘制 / 平移">🖌</button>
@@ -347,8 +348,10 @@
       <span class="title" id="ptnName">—</span>
       <span>缩放</span>
       <input type="range" id="zoom" min="6" max="44" value="20">
+      <button class="icon-btn" id="btnUndo" disabled title="撤销上一步 (Ctrl/⌘+Z)">↩︎ 撤销</button>
       <button class="icon-btn" id="btnFit">适配</button>
       <button class="icon-btn iron-btn" id="btnIron" disabled>🔥 熨烫</button>
+      <button class="icon-btn" id="btnClear" title="清除当前所有拼豆，从头再拼">🧼 清空</button>
       <div class="progress-wrap"><div class="progress-bar" id="pbar"></div></div>
       <span class="progress-num" id="pnum">0%</span>
     </div>
@@ -378,7 +381,8 @@
   <div class="sheet">
     <span class="x" data-close>×</span>
     <h2>选一张图案开拼</h2>
-    <div class="desc">点内置图案直接开拼，或上传自己的图片自动转成拼豆模板。</div>
+    <div class="desc">点内置图案直接开拼，或上传自己的图片自动转成拼豆模板。
+      <button class="icon-btn" id="btnRandom" style="margin-left:8px">🎲 随手拼一张</button></div>
     <div id="wipSection" hidden>
       <div class="sc-section-label" style="color:var(--accent)">▶ 继续拼（未完成）</div>
       <div class="grid" id="wipGrid"></div>
@@ -421,6 +425,7 @@
         <div class="wd-meta" id="wdMeta"></div>
         <div class="wd-actions">
           <button class="primary" id="wdReplay">🧩 重新拼这张</button>
+          <button id="wdExport">💾 保存图片</button>
           <button id="wdRename">✏️ 重命名</button>
           <button class="danger" id="wdDelete">🗑 删除</button>
         </div>
@@ -520,7 +525,7 @@ function applyTheme(t, persist){
 
 /* ============================== 全局状态 ============================== */
 const state={ pattern:null, beads:null, view:{scale:20,ox:0,oy:0}, active:0, hint:false, mode:'draw',
-  erase:false, checkUntil:0, forging:false, forged:false, anim:null };
+  erase:false, checkUntil:0, forging:false, forged:false, anim:null, guided:true };
 function newEmptyBeads(p){ return new Int8Array(p.width*p.height).fill(-1); }
 const board=document.getElementById('board'), bctx=board.getContext('2d');
 const fx=document.getElementById('fx'), fctx=fx.getContext('2d');
@@ -571,6 +576,39 @@ function mixTo(hex, rgb, t){ const [r,g,b]=hx2rgb(hex);
   const m=(v,to)=>Math.round(v+(to-v)*t); return `rgb(${m(r,rgb[0])},${m(g,rgb[1])},${m(b,rgb[2])})`; }
 function glowActive(){ return TH.glow && !/,\s*0\s*\)$/.test(TH.glow) && TH.glow!=='rgba(0,0,0,0)'; }
 
+/* ===== 拼豆 sprite 缓存：常态下每颗豆贴预渲染图，避免每帧重算渐变（大图/动画丝滑） ===== */
+const SPRITE_BASE=128, JB_N=4;                  // sprite 分辨率 / 颜色抖动档数（保留塑料质感又能缓存）
+const _spriteCache=new Map();                   // key: hex|jb → 离屏 canvas
+function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r);
+  c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function jitterOf(i){ return ((Math.imul(i^0x9e3779b9, 2654435761))>>>0)%JB_N; }
+function renderRestBead(ctx,S,hex,jb){          // 画一颗“静置生豆”（drawBead 的 f=0 形态）填满 S×S
+  const s=S, cx=s/2, cy=s/2, size=0.95*s, half=size/2, rad=half, R=half;
+  let [r,g,b]=hx2rgb(hex); const dv=(((jb+0.5)/JB_N)-0.5)*14;   // ±~5 亮度抖动
+  r=clamp8(r+dv); g=clamp8(g+dv); b=clamp8(b+dv);
+  const base=`rgb(${r|0},${g|0},${b|0})`;
+  ctx.fillStyle='rgba(55,40,20,0.20)'; rr(ctx, cx-half+s*0.045, cy-half+s*0.075, size, size, rad); ctx.fill(); // 接触阴影
+  const body=ctx.createRadialGradient(cx,cy,R*0.6, cx,cy,R);
+  body.addColorStop(0,base); body.addColorStop(0.80,base); body.addColorStop(1,rgbDarken(r,g,b,0.20));
+  ctx.fillStyle=body; ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.fill();
+  const tg=ctx.createRadialGradient(cx,cy-R*0.42,0, cx,cy-R*0.42,R*1.25);
+  tg.addColorStop(0,'rgba(255,255,255,0.20)'); tg.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=tg; ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.fill();
+  ctx.lineWidth=Math.max(1,R*0.12);
+  ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.beginPath(); ctx.arc(cx,cy,R*0.92,Math.PI*1.08,Math.PI*1.72); ctx.stroke();
+  ctx.strokeStyle='rgba(0,0,0,0.13)'; ctx.beginPath(); ctx.arc(cx,cy,R*0.92,Math.PI*0.12,Math.PI*0.72); ctx.stroke();
+  const hR=0.42*R;
+  const hole=ctx.createRadialGradient(cx+R*0.04,cy+R*0.05,hR*0.15, cx,cy,hR);
+  hole.addColorStop(0,'rgba(35,24,12,0.58)'); hole.addColorStop(0.65,'rgba(58,42,22,0.40)'); hole.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=hole; ctx.beginPath(); ctx.arc(cx,cy,hR,0,7); ctx.fill();
+  ctx.fillStyle='rgba(150,132,102,0.85)'; ctx.beginPath(); ctx.arc(cx,cy,hR*0.46,0,7); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.30)'; ctx.beginPath(); ctx.arc(cx-hR*0.34,cy-hR*0.42,hR*0.18,0,7); ctx.fill();
+}
+function beadSprite(hex,jb){ const key=hex+'|'+jb; let c=_spriteCache.get(key); if(c)return c;
+  c=document.createElement('canvas'); c.width=c.height=SPRITE_BASE; renderRestBead(c.getContext('2d'),SPRITE_BASE,hex,jb);
+  _spriteCache.set(key,c); return c; }
+function paintBead(px,py,s,hex,i){ bctx.drawImage(beadSprite(hex,jitterOf(i)), px, py, s, s); }
+
 function draw(){
   const p=state.pattern; if(!p) return;
   // 自愈：保持缓冲与显示尺寸/DPR 一致（即使 resize/ResizeObserver 未触发也能纠正）
@@ -579,7 +617,7 @@ function draw(){
   if(board.width!==w||board.height!==h||DPR!==dpr){ DPR=dpr; board.width=w; board.height=h; fx.width=w; fx.height=h; }
   const s=state.view.scale*DPR, ox=state.view.ox*DPR, oy=state.view.oy*DPR;
   bctx.clearRect(0,0,board.width,board.height);
-  bctx.font=`${Math.max(8,s*0.42)}px -apple-system,sans-serif`;
+  bctx.font=`${Math.max(8, s*(p.palette.length>=10?0.34:0.42))}px -apple-system,sans-serif`; // 色多(两位数编号)时缩小字号防挤
   bctx.textAlign='center'; bctx.textBaseline='middle';
   const hintColor=state.hint? (p.palette[state.active]&&p.palette[state.active].hex) : null;
   const a=state.anim;
@@ -605,19 +643,22 @@ function draw(){
       const b=state.beads[i];               // 实际放置色（-1 空，可能放错）
       if(b>=0){
         const bhex=p.palette[b].hex;         // 画实际放下的颜色
-        const f = a&&a.fuseX!=null ? Math.max(0,Math.min(1, a.fuseX - x)) : 0;
+        // 成型动画期间走完整 3D 渲染（熔接/翻面/冷却）；常态贴预渲染 sprite（高性能）
+        const renderOne = a
+          ? ()=>drawBead(px,py,s,bhex, a.fuseX!=null?Math.max(0,Math.min(1,a.fuseX-x)):0, a.cool, back, i)
+          : ()=>paintBead(px,py,s,bhex,i);
         const ds=drops[i];
         if(ds!=null){                              // 落下动画：从上方弹落入位
           const e=(now-ds)/DROP_MS;
-          if(e>=1){ delete drops[i]; drawBead(px,py,s,bhex,f,a?a.cool:0,back,i); }
+          if(e>=1){ delete drops[i]; renderOne(); }
           else{
             const dy=-(1-easeOutBounce(e))*DROP_H*s;          // 高处落下并回弹
             const near=Math.max(0,1-Math.abs(dy)/(0.2*s));    // 触地瞬间压扁
             const sq=1-0.18*near, cx2=px+s/2, cy2=py+s/2;
             bctx.save(); bctx.translate(0,dy); bctx.translate(cx2,cy2); bctx.scale(1,sq); bctx.translate(-cx2,-cy2);
-            drawBead(px,py,s,bhex,f,a?a.cool:0,back,i); bctx.restore();
+            renderOne(); bctx.restore();
           }
-        } else drawBead(px,py,s,bhex, f, a?a.cool:0, back, i);
+        } else renderOne();
         if(now<state.checkUntil && b!==c) markWrong(px,py,s);   // “检查”时高亮放错的格
       }else{
         const isHint = hintColor && hex===hintColor;
@@ -753,36 +794,96 @@ function cellAt(clientX, clientY){
   if(x<0||y<0||x>=p.width||y>=p.height) return -1;
   return y*p.width+x;
 }
-let painting=false, panning=false, panStart=null;
+/* ---- 缩放（滑块 / 滚轮 / 双指共用，围绕指定锚点不跑偏） ---- */
+function applyZoom(ns, sx, sy){
+  const old=state.view.scale; ns=Math.max(6,Math.min(44,ns)); if(ns===old) return;
+  state.view.ox = sx-(sx-state.view.ox)*(ns/old);
+  state.view.oy = sy-(sy-state.view.oy)*(ns/old);
+  state.view.scale=ns; const z=document.getElementById('zoom'); if(z)z.value=Math.round(ns);
+}
+function zoomAt(factor, sx, sy){ applyZoom(state.view.scale*factor, sx, sy); draw(); }
+
+/* ---- 撤销（按「一笔」分组，拖拽涂的一片算一步） ---- */
+let undoStack=[], stroke=null;
+function beginStroke(){ stroke=[]; }
+function recordChange(i){ if(stroke) stroke.push({i, prev: state.beads[i]}); }
+function endStroke(){ if(stroke && stroke.length){ undoStack.push(stroke); if(undoStack.length>60)undoStack.shift(); updateUndoBtn(); } stroke=null; }
+function clearUndo(){ undoStack=[]; stroke=null; updateUndoBtn(); }
+function undo(){
+  if(state.forging || state.forged) return;
+  const s=undoStack.pop(); if(!s) return;
+  for(let k=s.length-1;k>=0;k--) state.beads[s[k].i]=s[k].prev;
+  Audio.place(); draw(); saveProgress(); refreshPalette(); refreshProgress(); updateUndoBtn();
+}
+function updateUndoBtn(){ const b=document.getElementById('btnUndo'); if(b) b.disabled=!undoStack.length||state.forging||state.forged; }
+
+/* ---- 指针交互：绘制 / 平移 / 双指捏合缩放 ---- */
+let painting=false, panning=false, panStart=null, spacePan=false;
+const pointers=new Map(); let pinch=null;
+function localXY(e){ const r=board.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
 board.addEventListener('pointerdown', e=>{
   if(state.forging) return;                 // 成型动画期间锁定输入
   board.setPointerCapture(e.pointerId);
-  if(state.mode==='pan'){ panning=true; panStart={x:e.clientX,y:e.clientY,ox:state.view.ox,oy:state.view.oy}; return; }
-  painting=true; tryPlace(e.clientX,e.clientY);
+  pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if(pointers.size===2){                    // 双指 → 捏合缩放，先停止绘制
+    if(painting){ endStroke(); painting=false; }
+    const pts=[...pointers.values()], r=board.getBoundingClientRect();
+    pinch={ dist:Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y),
+            mx:(pts[0].x+pts[1].x)/2-r.left, my:(pts[0].y+pts[1].y)/2-r.top };
+    return;
+  }
+  if(pointers.size>2) return;
+  if(spacePan || state.mode==='pan'){ panning=true; panStart={x:e.clientX,y:e.clientY,ox:state.view.ox,oy:state.view.oy}; return; }
+  painting=true; beginStroke(); tryPlace(e.clientX,e.clientY);
 });
 board.addEventListener('pointermove', e=>{
+  if(pointers.has(e.pointerId)) pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch && pointers.size>=2){
+    const pts=[...pointers.values()], r=board.getBoundingClientRect();
+    const dist=Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+    const mx=(pts[0].x+pts[1].x)/2-r.left, my=(pts[0].y+pts[1].y)/2-r.top;
+    if(pinch.dist>0) applyZoom(state.view.scale*(dist/pinch.dist), mx, my);
+    state.view.ox += mx-pinch.mx; state.view.oy += my-pinch.my;      // 双指整体拖动顺带平移
+    pinch={dist,mx,my}; draw(); return;
+  }
   if(panning){ state.view.ox=panStart.ox+(e.clientX-panStart.x); state.view.oy=panStart.oy+(e.clientY-panStart.y); draw(); return; }
   if(painting) tryPlace(e.clientX,e.clientY);
 });
-board.addEventListener('pointerup', ()=>{ painting=false; panning=false; });
-board.addEventListener('pointercancel', ()=>{ painting=false; panning=false; });
+function endPointer(e){
+  pointers.delete(e.pointerId);
+  if(pointers.size<2) pinch=null;
+  if(pointers.size===0){ if(painting)endStroke(); painting=false; panning=false; }
+}
+board.addEventListener('pointerup', endPointer);
+board.addEventListener('pointercancel', endPointer);
+board.addEventListener('wheel', e=>{ if(!state.pattern)return; e.preventDefault();   // 滚轮/触控板：以光标为中心缩放
+  const {x,y}=localXY(e); zoomAt(Math.exp(-e.deltaY*0.0015), x, y); }, {passive:false});
 
 let lastShake=0;
+function nudgeWrong(){ const t=performance.now(); if(t-lastShake<400)return; lastShake=t; shakeBoard(); } // 无忧模式：拿错色的温柔提示
+function autoAdvanceColor(){          // 当前色拼完 → 自动跳到下一个还没拼完的颜色，省去回调色板
+  const p=state.pattern; if(!p) return;
+  const {left}=counts(); if(left[state.active]>0) return;
+  const n=p.palette.length;
+  for(let k=1;k<=n;k++){ const idx=(state.active+k)%n; if(left[idx]>0){ state.active=idx; refreshPalette(); if(state.hint)draw(); return; } }
+}
 function tryPlace(cx,cy){
   if(state.forging || state.forged) return;       // 熨烫定型后不可改（真实里已永久熔接）
   const p=state.pattern; const i=cellAt(cx,cy); if(i<0) return;
   const c=p.cells[i]; if(c<0) return;             // 图案外的空白格不可放
   if(state.erase){                                 // 橡皮：拔掉这颗豆
-    if(state.beads[i]>=0){ state.beads[i]=-1; Audio.place(); draw(); saveProgress(); refreshPalette(); refreshProgress(); }
+    if(state.beads[i]>=0){ recordChange(i); state.beads[i]=-1; Audio.place(); draw(); saveProgress(); refreshPalette(); refreshProgress(); }
     return;
   }
+  if(state.guided && state.active!==c){ nudgeWrong(); return; }   // 无忧模式：拿错色温柔忽略，拼不出错
   if(state.beads[i]===state.active) return;        // 已是该色，免重复
+  recordChange(i);
   const wasEmpty = state.beads[i]<0;
-  state.beads[i]=state.active;                      // 任意颜色放到任意格（可放错 / 换色）
+  state.beads[i]=state.active;                      // 放豆（自由模式下任意色可放错 / 换色）
   Audio.place();
   if(wasEmpty) popBead(i); else draw();             // 新放才落下动画；换色直接重绘
   saveProgress();
-  refreshPalette(); refreshProgress();
+  refreshPalette(); refreshProgress(); autoAdvanceColor();
   if(isComplete()) onComplete();
 }
 function shakeBoard(){ stage.animate(
@@ -887,6 +988,8 @@ const Forge=(function(){
     fctx.clearRect(0,0,fx.width,fx.height); draw();
     Audio.complete(); addToGallery(); confetti();
     showBanner('🎉 成型啦！收进「我的作品」'); updateIronBtn();
+    // 定型并收藏后，把模板退回「未拼」，方便把同一张图再拼一次（先让成品+撒花展示一会儿）
+    setTimeout(()=>{ if(state.forged) clearBoard({banner:'✨ 已收进作品 · 模板已复位，可再拼一次'}); }, 3200);
   }
   function run(){
     if(state.forging || !state.pattern || !isComplete() || state.forged) return;
@@ -928,8 +1031,8 @@ function confetti(){
 const Audio=(function(){
   let ctx=null, on=loadSettings().sound!==false;
   function ac(){ if(!ctx) ctx=new (window.AudioContext||window.webkitAudioContext)(); if(ctx.state==='suspended')ctx.resume(); return ctx; }
-  function tone(freq, dur, type='triangle', vol=0.18, slideTo=null){
-    if(!on) return; const c=ac(), o=c.createOscillator(), g=c.createGain();
+  function tone(freq, dur, type='triangle', vol=0.18, slideTo=null, force=false){
+    if(!on && !force) return; const c=ac(), o=c.createOscillator(), g=c.createGain();
     o.type=type; o.frequency.setValueAtTime(freq,c.currentTime);
     if(slideTo)o.frequency.exponentialRampToValueAtTime(slideTo,c.currentTime+dur);
     g.gain.setValueAtTime(vol,c.currentTime); g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+dur);
@@ -949,7 +1052,7 @@ const Audio=(function(){
   return {
     place(){ const base=520+Math.random()*120; tone(base,0.12,'triangle',0.16, base*0.7); },
     complete(){ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,0.18,'sine',0.16),i*110)); },
-    ccAlert(){ tone(880,0.16,'sine',0.28,880); setTimeout(()=>tone(660,0.28,'sine',0.28),150); },
+    ccAlert(){ tone(880,0.16,'sine',0.28,880,true); setTimeout(()=>tone(660,0.28,'sine',0.28,null,true),150); }, // 代码完成提醒：永远响，不被拼豆静音牵连
     iron(){ noise(1.6,0.07,3200); },                                   // ⑤ 熨烫滋滋
     cool(){ tone(660,0.25,'sine',0.12,440); setTimeout(()=>tone(300,0.12,'sine',0.16),180); }, // ⑥ 冷却“叮”+压平
     flip(){ noise(0.32,0.12,1400,400); },                              // ⑦ 翻面 whoosh
@@ -977,22 +1080,32 @@ function convertImage(img){
 
 /* ============================== 存档 / 作品廊 ============================== */
 function loadSettings(){ try{return JSON.parse(localStorage.getItem('pinbeads:settings'))||{};}catch(_){return{};} }
-function saveSettings(s){ try{localStorage.setItem('pinbeads:settings',JSON.stringify(s));}catch(_){} }
+function saveSettings(s){ safeSet('pinbeads:settings',JSON.stringify(s)); }
+// 写 localStorage 的统一兜底：配额满时先丢最旧的缩略图再重试，仍失败给一次温和提示（不再静默吞掉）
+let quotaWarned=false;
+function safeSet(key,val){
+  try{ localStorage.setItem(key,val); return true; }
+  catch(e){
+    try{
+      const g=JSON.parse(localStorage.getItem('pinbeads:gallery')||'[]'); if(g.length>20) localStorage.setItem('pinbeads:gallery',JSON.stringify(g.slice(0,20)));
+      const w=JSON.parse(localStorage.getItem('pinbeads:wip')||'[]'); if(w.length>15) localStorage.setItem('pinbeads:wip',JSON.stringify(w.slice(0,15)));
+      localStorage.setItem(key,val); return true;
+    }catch(_){ if(!quotaWarned){ quotaWarned=true; try{toast('💾 本地存储快满了，老作品缩略图可能存不下，去作品墙删几张吧');}catch(__){} } return false; }
+  }
+}
 let saveT=0;
 function persistNow(){
   if(!state.pattern) return;
   clearTimeout(saveT);
-  try{
-    localStorage.setItem('pinbeads:progress:'+state.pattern.id, JSON.stringify({beads:Array.from(state.beads),updatedAt:Date.now()}));
-    localStorage.setItem('pinbeads:last', state.pattern.id);
-    if(String(state.pattern.id).indexOf('img:')===0) localStorage.setItem('pinbeads:imgdef:'+state.pattern.id, JSON.stringify(serializePattern(state.pattern)));
-  }catch(_){}
+  safeSet('pinbeads:progress:'+state.pattern.id, JSON.stringify({beads:Array.from(state.beads),updatedAt:Date.now()}));
+  safeSet('pinbeads:last', state.pattern.id);
+  if(String(state.pattern.id).indexOf('img:')===0) safeSet('pinbeads:imgdef:'+state.pattern.id, JSON.stringify(serializePattern(state.pattern)));
   upsertWip();
 }
 function saveProgress(){ if(!state.pattern) return; clearTimeout(saveT); saveT=setTimeout(persistNow,120); }
 /* 未完成作品登记表（含上传图，供「继续拼」列表） */
 function readWip(){ try{return JSON.parse(localStorage.getItem('pinbeads:wip')||'[]');}catch(_){return [];} }
-function writeWip(l){ try{localStorage.setItem('pinbeads:wip', JSON.stringify(l.slice(0,40)));}catch(_){} }
+function writeWip(l){ safeSet('pinbeads:wip', JSON.stringify(l.slice(0,40))); }
 function removeWip(id){ writeWip(readWip().filter(x=>x.id!==id)); }
 function upsertWip(){
   if(!state.pattern) return;
@@ -1018,8 +1131,8 @@ function addToGallery(){
     const g=JSON.parse(localStorage.getItem('pinbeads:gallery')||'[]');
     const item={id:state.pattern.id, name:state.pattern.name, at:Date.now(),
       w:state.pattern.width, h:state.pattern.height, thumb:renderThumb(state.pattern,120,state.beads)};
-    const idx=g.findIndex(x=>x.id===item.id); if(idx>=0)g.splice(idx,1); g.unshift(item);
-    localStorage.setItem('pinbeads:gallery', JSON.stringify(g.slice(0,60)));
+    g.unshift(item);   // 同一图案可反复拼，每次完成各存一件（删除/重命名以 id+at 双键区分）
+    safeSet('pinbeads:gallery', JSON.stringify(g.slice(0,60)));
     removeWip(state.pattern.id);
   }catch(_){}
 }
@@ -1034,6 +1147,21 @@ function renderThumb(p, size, beads){
 }
 
 /* ============================== 载入图案 ============================== */
+/* 把当前模板清回「未拼」状态：清豆、清存档、解除熨烫定型，可反复重拼 */
+function clearBoard(opts={}){
+  if(!state.pattern) return;
+  const p=state.pattern;
+  state.beads=newEmptyBeads(p);
+  state.forging=false; state.forged=false; state.anim=null;
+  state.erase=false; state.checkUntil=0;
+  try{ localStorage.removeItem('pinbeads:progress:'+p.id); }catch(_){}  // 抹掉进度档，下次进来是空板
+  removeWip(p.id);                                                       // 从「继续拼」列表移除
+  fctx.clearRect(0,0,fx.width,fx.height);                                // 清掉熨烫光泽层
+  clearUndo();                                                           // 撤销栈一并清空
+  const eb=document.getElementById('btnErase'); if(eb)eb.classList.remove('active');
+  refreshPalette(); refreshProgress(); draw(); updateIronBtn();
+  if(opts.banner) showBanner(opts.banner);
+}
 function loadPattern(p, resume=true){
   if(state.pattern && state.pattern.id!==p.id) persistNow();  // 切换前先把当前进度落盘，绝不丢
   state.pattern=p;
@@ -1042,9 +1170,11 @@ function loadPattern(p, resume=true){
   state.active=0;
   state.erase=false; state.checkUntil=0;
   state.forging=false; state.forged=false; state.anim=null;
+  clearUndo();
+  const eb=document.getElementById('btnErase'); if(eb)eb.classList.remove('active');
   document.getElementById('ptnName').textContent=p.name;
   refreshPalette(); refreshProgress(); fit(); updateIronBtn();
-  localStorage.setItem('pinbeads:last', p.id);
+  safeSet('pinbeads:last', p.id);
 }
 
 /* ============================== CC 联动面板（SSE） ============================== */
@@ -1173,7 +1303,8 @@ const CCPanel=(function(){
     // 定时重渲染：让闲置会话淡出、耗时/“刚刚”等文字随时间更新
     setInterval(()=>render(current), 5000);
   }
-  return { connect, render, toggle, expand, toggleFilterUI, setActiveOnly, isActiveOnly:()=>activeOnly };
+  return { connect, render, toggle, expand, toggleFilterUI, setActiveOnly, isActiveOnly:()=>activeOnly,
+    activeCount:()=>Object.values(current).filter(isActive).length };
 })();
 document.getElementById('btnFilter').onclick=()=>CCPanel.toggleFilterUI();
 document.getElementById('btnActive').onclick=()=>CCPanel.setActiveOnly(!CCPanel.isActiveOnly());
@@ -1218,7 +1349,10 @@ const FocusGuard=(function(){
   let active=0, last=0, threshold=(loadSettings().focusMin||10)*60*1000, fired=false;
   return { beat(){ const now=Date.now(); if(last===0)last=now;
       if(now-last<8000) active+=now-last; last=now;
-      if(active>threshold && !fired){ fired=true; toast('🧩 已经拼了一会儿啦，<b>去看看代码？</b>'); active=0; setTimeout(()=>fired=false,60000);} } };
+      if(active>threshold && !fired){ fired=true;
+        const busy = CCPanel.activeCount && CCPanel.activeCount()>0;     // 有会话在跑才提醒“去看代码”
+        toast(busy ? '🧩 拼了一会儿啦，<b>去看看代码？</b>' : '🧩 拼了一会儿，<b>歇会儿眼睛、活动下手腕～</b>');
+        active=0; setTimeout(()=>fired=false,60000);} } };
 })();
 function toast(html){
   const t=document.createElement('div'); t.className='toast'; t.innerHTML=html;
@@ -1272,7 +1406,7 @@ function buildPicker(){
 /* ===== 作品展示墙 ===== */
 const BIG_THRESHOLD=28;
 function readGallery(){ try{return JSON.parse(localStorage.getItem('pinbeads:gallery')||'[]');}catch(_){return [];} }
-function writeGallery(g){ try{localStorage.setItem('pinbeads:gallery', JSON.stringify(g));}catch(_){} }
+function writeGallery(g){ safeSet('pinbeads:gallery', JSON.stringify(g)); }
 function resolveWorkPattern(it){
   try{
     if(String(it.id).indexOf('img:')===0){ const def=JSON.parse(localStorage.getItem('pinbeads:imgdef:'+it.id)); return def?deserializePattern(def):null; }
@@ -1366,7 +1500,21 @@ function replayWork(it){
   document.getElementById('workDetail').classList.remove('show');
   document.getElementById('showcase').classList.remove('show');
 }
+function exportWork(it){                 // 存成 PNG 下载：能找到原图就按目标色高清重绘，否则退回缩略图
+  const p=resolveWorkPattern(it); let url=null;
+  if(p){
+    const cell=Math.max(6, Math.min(24, Math.floor(960/Math.max(p.width,p.height))));
+    const c=document.createElement('canvas'); c.width=p.width*cell; c.height=p.height*cell; const x=c.getContext('2d');
+    for(let yy=0;yy<p.height;yy++)for(let xx=0;xx<p.width;xx++){ const cc=p.cells[yy*p.width+xx]; if(cc<0)continue;
+      x.fillStyle=p.palette[cc].hex; x.fillRect(xx*cell,yy*cell,cell,cell); }
+    url=c.toDataURL('image/png');
+  } else url=it.thumb;
+  if(!url){ toast('导出失败 😢'); return; }
+  const a=document.createElement('a'); a.href=url; a.download=(it.name||'拼豆作品')+'.png';
+  document.body.appendChild(a); a.click(); a.remove(); toast('已保存图片 💾');
+}
 document.getElementById('wdReplay').onclick=()=>detailItem&&replayWork(detailItem);
+document.getElementById('wdExport').onclick=()=>detailItem&&exportWork(detailItem);
 document.getElementById('wdRename').onclick=()=>detailItem&&renameWork(detailItem);
 document.getElementById('wdDelete').onclick=()=>detailItem&&deleteWork(detailItem);
 document.getElementById('scBack').onclick=()=>document.getElementById('showcase').classList.remove('show');
@@ -1384,17 +1532,60 @@ document.getElementById('btnMode').onclick=e=>{ state.mode=state.mode==='draw'?'
   e.currentTarget.title=state.mode==='draw'?'绘制 / 平移':'平移 / 绘制';
   e.currentTarget.classList.toggle('active', state.mode==='pan'?false:true); };
 document.getElementById('btnSound').onclick=e=>{ const on=Audio.toggle(); e.currentTarget.textContent=on?'🔊':'🔇'; };
-document.getElementById('zoom').oninput=e=>{ const old=state.view.scale; state.view.scale=+e.target.value;
-  const cx=stage.clientWidth/2, cy=stage.clientHeight/2;
-  state.view.ox=cx-(cx-state.view.ox)*(state.view.scale/old);
-  state.view.oy=cy-(cy-state.view.oy)*(state.view.scale/old); draw(); };
+document.getElementById('zoom').oninput=e=>{ applyZoom(+e.target.value, stage.clientWidth/2, stage.clientHeight/2); draw(); };
 document.getElementById('btnFit').onclick=fit;
 document.getElementById('btnIron').onclick=()=>Forge.run();
-document.getElementById('btnErase').onclick=e=>{ state.erase=!state.erase;
-  e.currentTarget.classList.toggle('active', state.erase);
-  if(state.erase){ state.mode='draw'; const bm=document.getElementById('btnMode');
-    bm.dataset.mode='draw'; bm.textContent='🖌'; bm.classList.add('active'); } };
+document.getElementById('btnClear').onclick=()=>{
+  if(!state.pattern){ toast('先选一张图案再清空'); return; }
+  if(state.forging) return;                                  // 熨烫动画中不打断
+  const hasBeads=state.beads.some(b=>b>=0);
+  if(hasBeads && !confirm('清除当前所有拼豆，从头再拼？')) return;
+  clearBoard({banner:'🧼 已清空，可以重新拼啦'});
+  Audio.place();
+};
+function setErase(v){ state.erase=v;
+  document.getElementById('btnErase').classList.toggle('active', v);
+  if(v){ state.mode='draw'; const bm=document.getElementById('btnMode');
+    bm.dataset.mode='draw'; bm.textContent='🖌'; bm.classList.add('active'); } }   // 图标态（保留新顶栏风格）
+document.getElementById('btnErase').onclick=()=>setErase(!state.erase);
 document.getElementById('btnCheck').onclick=()=>checkBoard();
+// 无忧模式 ⇄ 自由模式：无忧下拿错色不会放进去（拼不出错），自由下可放错并用「检查」找茬
+function syncGuidedUI(){ const b=document.getElementById('btnGuided'); if(!b)return;
+  b.textContent = state.guided? '😌 无忧模式' : '🎨 自由模式';
+  b.classList.toggle('active', state.guided);
+  const chk=document.getElementById('btnCheck'); if(chk) chk.style.display = state.guided? 'none' : '';
+}
+document.getElementById('btnGuided').onclick=()=>{ state.guided=!state.guided;
+  const s=loadSettings(); s.guided=state.guided; saveSettings(s); syncGuidedUI(); };
+document.getElementById('btnUndo').onclick=undo;
+document.getElementById('btnRandom').onclick=()=>{ const def=PATTERNS[Math.floor(Math.random()*PATTERNS.length)];
+  loadPattern(decodePattern(def)); closeModals(); };
+// 键盘快捷键：数字选色(支持 10+，连按即多位数) · [ ] / ←→ 上下一色 · E 橡皮 · H 高亮 · F 适配 · 空格平移 · Ctrl/⌘+Z 撤销
+let numBuf='', numTimer=null;
+function selectColor(idx){ const p=state.pattern; if(!p||idx<0||idx>=p.palette.length) return;
+  setErase(false); state.active=idx; refreshPalette(); if(state.hint)draw(); }
+function cycleColor(dir){ const p=state.pattern; if(!p)return; const n=p.palette.length; selectColor((state.active+dir+n)%n); }
+document.addEventListener('keydown', e=>{
+  if(e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+  if((e.ctrlKey||e.metaKey) && (e.key==='z'||e.key==='Z')){ e.preventDefault(); undo(); return; }
+  if(e.code==='Space'){ if(!spacePan){ spacePan=true; document.body.style.cursor='grab'; } e.preventDefault(); return; }
+  const modalOpen=document.querySelector('.modal.show')||document.getElementById('showcase').classList.contains('show');
+  if(modalOpen || !state.pattern) return;
+  const k=e.key;
+  if(k>='0' && k<='9'){                       // 连按数字 = 多位色号：先按 1 再按 2 → 12 号色
+    numBuf+=k; clearTimeout(numTimer); numTimer=setTimeout(()=>numBuf='', 800);
+    let n=parseInt(numBuf,10);
+    if(n>state.pattern.palette.length){ numBuf=k; n=parseInt(k,10); }   // 超出范围就以本次数字重新起算
+    if(n>=1) selectColor(n-1);
+    return;
+  }
+  if(k==='[' || k===',' || k==='ArrowLeft'){ cycleColor(-1); return; }   // 上一色
+  if(k===']' || k==='.' || k==='ArrowRight'){ cycleColor(1); return; }   // 下一色
+  if(k==='e'||k==='E'){ setErase(!state.erase); return; }
+  if(k==='h'||k==='H'){ document.getElementById('btnHint').click(); return; }
+  if(k==='f'||k==='F'){ fit(); return; }
+});
+document.addEventListener('keyup', e=>{ if(e.code==='Space'){ spacePan=false; document.body.style.cursor=''; } });
 function checkBoard(){
   const p=state.pattern; if(!p) return;
   let wrong=0, empty=0;
@@ -1429,6 +1620,8 @@ function boot(){
   })();
   resizeCanvas();
   CCPanel.connect();
+  state.guided = loadSettings().guided!==false;   // 默认无忧模式
+  syncGuidedUI();
   const last=localStorage.getItem('pinbeads:last');
   let restored=false;
   if(last){
