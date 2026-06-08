@@ -516,7 +516,13 @@ function resizeCanvas(){
 }
 window.addEventListener('resize', resizeCanvas);
 // 舞台尺寸因布局回流（1fr 列宽变化等）改变时，window resize 捕捉不到——用 ResizeObserver 兜住
-if(window.ResizeObserver){ new ResizeObserver(()=>resizeCanvas()).observe(stage); }
+if(window.ResizeObserver){
+  let _fitted=false;
+  new ResizeObserver(()=>{
+    resizeCanvas();
+    if(!_fitted && stage.clientWidth>50 && stage.clientHeight>50 && state.pattern){ _fitted=true; fit(); }
+  }).observe(stage);
+}
 // 跨屏/系统缩放导致 DPR 变化时也同步（每次变化后重新挂监听）
 function watchDPR(){ try{ matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`)
   .addEventListener('change', ()=>{ resizeCanvas(); watchDPR(); }, {once:true}); }catch(_){} }
@@ -1411,6 +1417,8 @@ function boot(){
   if(!restored) loadPattern(decodePattern(PATTERNS[0]));
   if(!localStorage.getItem('pinbeads:welcomed')){ localStorage.setItem('pinbeads:welcomed','1');
     setTimeout(()=>toast('点选一个颜色，把对应编号的格子点亮 ✨'),600); }
+  // 首屏：等布局稳定后再适配一次，避免盘面卡在左上角小尺寸
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ if(state.pattern) fit(); }));
 }
 boot();
 </script>
