@@ -525,6 +525,25 @@ watchDPR();
 /* ============================== Board 渲染 ============================== */
 function mix(hex, t){ const [r,g,b]=hx2rgb(hex);
   const m=v=>Math.round(v+(255-v)*t); return `rgb(${m(r)},${m(g)},${m(b)})`; }
+/* canvas 主题取色：缓存自 CSS 变量，主题切换时由 applyTheme→applyThemeVars 刷新 */
+let TH={};
+function applyThemeVars(){
+  const cs=getComputedStyle(document.documentElement); const g=n=>cs.getPropertyValue(n).trim();
+  const tgt=(g('--cell-target')||'243,236,224').split(',').map(n=>+n);
+  TH={
+    peg:g('--peg-base')||'#e8dcc8',
+    pegDot:g('--peg-dot')||'rgba(140,120,90,.16)',
+    cellTarget:(tgt.length===3?tgt:[243,236,224]),
+    cellStroke:g('--cell-stroke')||'rgba(150,130,100,.18)',
+    cellText:g('--cell-text')||'rgba(120,100,75,.55)',
+    glow:g('--bead-glow')||'rgba(0,0,0,0)',
+  };
+}
+applyThemeVars();
+// 朝指定 rgb 混合（空格预览用；替代只能朝白混合的 mix）
+function mixTo(hex, rgb, t){ const [r,g,b]=hx2rgb(hex);
+  const m=(v,to)=>Math.round(v+(to-v)*t); return `rgb(${m(r,rgb[0])},${m(g,rgb[1])},${m(b,rgb[2])})`; }
+function glowActive(){ return TH.glow && !/,\s*0\s*\)$/.test(TH.glow) && TH.glow!=='rgba(0,0,0,0)'; }
 
 function draw(){
   const p=state.pattern; if(!p) return;
@@ -576,11 +595,11 @@ function draw(){
         if(now<state.checkUntil && b!==c) markWrong(px,py,s);   // “检查”时高亮放错的格
       }else{
         const isHint = hintColor && hex===hintColor;
-        bctx.fillStyle= isHint? mix(hex,.45) : mix(hex,.80);
+        bctx.fillStyle= isHint? mixTo(hex,TH.cellTarget,.45) : mixTo(hex,TH.cellTarget,.80);
         roundRect(px+s*0.06,py+s*0.06,s*0.88,s*0.88,s*0.18); bctx.fill();
-        bctx.strokeStyle= isHint? hex : 'rgba(150,130,100,.18)';
+        bctx.strokeStyle= isHint? hex : TH.cellStroke;
         bctx.lineWidth= isHint? 2*DPR : 1*DPR; bctx.stroke();
-        bctx.fillStyle= isHint? hex : 'rgba(120,100,75,.55)';
+        bctx.fillStyle= isHint? hex : TH.cellText;
         bctx.fillText(String(c+1), px+s/2, py+s/2+ s*0.02);
       }
     }
@@ -607,6 +626,14 @@ function drawBead(px,py,s,hex,f=0,cool=0,back=false,seed=0){
   if(cool>0){ const k=1-cool*0.12; r=r*k; g=g*k; b=b*k; }  // 冷却后颜色加深
   const base=`rgb(${r|0},${g|0},${b|0})`;
   if(back){ bctx.fillStyle=mix(hex,0.25); roundRect(cx-half,cy-half,size,size,rad); bctx.fill(); return; } // 背面：哑光平面
+  if(glowActive() && f<0.5){   // 夜间：未熔接的立体豆在暗底上点一圈暖色辉光
+    bctx.save();
+    const gr=bctx.createRadialGradient(cx,cy,half*0.2, cx,cy,half*1.7);
+    gr.addColorStop(0, TH.glow); gr.addColorStop(1,'rgba(0,0,0,0)');
+    bctx.globalCompositeOperation='lighter';
+    bctx.fillStyle=gr; bctx.beginPath(); bctx.arc(cx,cy,half*1.7,0,7); bctx.fill();
+    bctx.restore();
+  }
   const wall=1-0.7*f;
   const bump=Math.max(0, 1-f);   // 生豆=1(全立体) → 熔接=0(扁平像素)
   // 熔接基底：熔接度高时铺满整格(略外扩防抗锯齿缝)，邻格无缝相接 → 连成整片扁平像素
@@ -657,9 +684,9 @@ function drawBead(px,py,s,hex,f=0,cool=0,back=false,seed=0){
   }
 }
 function drawPegboard(x,y,w,h,s){
-  bctx.fillStyle='#e8dcc8';
+  bctx.fillStyle=TH.peg;
   roundRect(x-s*0.35,y-s*0.35,w+s*0.7,h+s*0.7,s*0.5); bctx.fill();
-  bctx.fillStyle='rgba(140,120,90,.16)';
+  bctx.fillStyle=TH.pegDot;
   const p=state.pattern;
   for(let yy=0;yy<p.height;yy++)for(let xx=0;xx<p.width;xx++){
     bctx.beginPath(); bctx.arc(x+(xx+0.5)*s, y+(yy+0.5)*s, s*0.16, 0, 7); bctx.fill();
