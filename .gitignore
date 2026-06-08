@@ -15,3 +15,6 @@ yarn-error.log*
 .env.local
 .vscode/
 .idea/
+
+# git worktrees（临时工作树，不应提交）
+.claude/worktrees/
