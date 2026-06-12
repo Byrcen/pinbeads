@@ -111,8 +111,9 @@ const server = http.createServer((req, res) => {
   // 静态资源（像素字体等）：仅白名单目录 assets/，规范化路径防穿越
   if (req.method === 'GET' && url.pathname.startsWith('/assets/')) {
     const ASSETS = path.join(__dirname, 'assets');
-    const fp = path.normalize(path.join(__dirname, decodeURIComponent(url.pathname)));
+    const fp = path.normalize(path.join(__dirname, url.pathname));
     if (!fp.startsWith(ASSETS + path.sep)) { res.writeHead(404); return res.end('not found'); }
+    if (fp.endsWith(path.sep)) { res.writeHead(404); return res.end('not found'); }
     const MIME = { '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8' };
     try {
       const data = fs.readFileSync(fp);

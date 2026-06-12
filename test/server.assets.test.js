@@ -16,6 +16,7 @@ function startServer() {
       const m = out.match(/localhost:(\d+)/);
       if (m && Number(m[1]) > 0) resolve({ child, port: Number(m[1]) });
     });
+    child.stderr.on('data', (c) => { out += c; });
     child.on('error', reject);
     setTimeout(() => reject(new Error('server 未就绪，stdout: ' + out)), 5000).unref();
   });
@@ -27,6 +28,7 @@ test('GET /assets 字体：200 + font/woff2 + wOF2 魔数', async () => {
     const r = await fetch(`http://localhost:${port}/assets/fonts/fusion-pixel-12px-proportional-zh_hans.woff2`);
     assert.equal(r.status, 200);
     assert.equal(r.headers.get('content-type'), 'font/woff2');
+    assert.ok((r.headers.get('cache-control') || '').includes('max-age=604800'));
     const buf = Buffer.from(await r.arrayBuffer());
     assert.equal(buf.subarray(0, 4).toString('ascii'), 'wOF2');
   } finally { child.kill(); }
