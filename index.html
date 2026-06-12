@@ -31,6 +31,9 @@
     --bevel-light:rgba(255,246,220,.9);    /* 木框上受光 */
     --bevel-dark:rgba(58,38,22,.32);       /* 木框下背光 */
     --plank:rgba(74,50,32,.16);            /* 木板拼缝 */
+    --plank-hi:rgba(255,245,220,.05);  /* 板面受光 */
+    --plank-lo:rgba(74,50,32,.05);     /* 板面背光 */
+    --grain:rgba(74,50,32,.045);       /* 细木纹 */
     /* canvas 用（drawPegboard / 空格 / 豆子 AO / 夜间辉光）——原样保留 */
     --peg-base:#e8dcc8;        /* 洞洞板底 */
     --peg-dot:rgba(140,120,90,.16);
@@ -42,7 +45,7 @@
   }
   /* —— 夜间（油灯木屋）—— */
   [data-theme="night"]{
-    --desk:#2a1d12; --desk-glow:#5a3a1a;
+    --desk:#2a1d12; --desk-glow:#6b3f15;
     --board-base:#352c23;
     --panel:#3a2c1d; --panel-2:#463624;
     --soft:#4a3826; --soft-2:#42321f;
@@ -57,6 +60,9 @@
     --bevel-light:rgba(255,220,160,.16);
     --bevel-dark:rgba(0,0,0,.5);
     --plank:rgba(0,0,0,.28);
+    --plank-hi:rgba(255,220,160,.025);
+    --plank-lo:rgba(0,0,0,.10);
+    --grain:rgba(0,0,0,.10);
     --peg-base:#352c23;
     --peg-dot:rgba(255,225,180,.07);
     --cell-target:53,44,35;
@@ -71,9 +77,20 @@
     margin:0; font-family:'Fusion Pixel',-apple-system,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
     background:
       radial-gradient(1100px 720px at 82% -12%, var(--desk-glow), transparent 60%),
+      repeating-linear-gradient(90deg, transparent 0 7px, var(--grain) 7px 8px),
+      repeating-linear-gradient(0deg, var(--plank-hi) 0 46px, var(--plank-lo) 46px 92px),
       repeating-linear-gradient(0deg, transparent 0 46px, var(--plank) 46px 49px),
       var(--desk);
     color:var(--ink); overflow:hidden;
+  }
+  /* 夜间：窗光收拢成一盏油灯的光圈 */
+  [data-theme="night"] body{
+    background:
+      radial-gradient(700px 480px at 82% -6%, var(--desk-glow), transparent 55%),
+      repeating-linear-gradient(90deg, transparent 0 7px, var(--grain) 7px 8px),
+      repeating-linear-gradient(0deg, var(--plank-hi) 0 46px, var(--plank-lo) 46px 92px),
+      repeating-linear-gradient(0deg, transparent 0 46px, var(--plank) 46px 49px),
+      var(--desk);
   }
   .app{display:grid; grid-template-columns:1fr 300px; grid-template-rows:auto 1fr; height:100vh}
   header{
@@ -271,6 +288,16 @@
     position:fixed; inset:0; z-index:60; display:none; flex-direction:column;
     background:
       radial-gradient(1100px 500px at 80% -8%, var(--desk-glow), transparent 60%),
+      repeating-linear-gradient(90deg, transparent 0 7px, var(--grain) 7px 8px),
+      repeating-linear-gradient(0deg, var(--plank-hi) 0 46px, var(--plank-lo) 46px 92px),
+      repeating-linear-gradient(0deg, transparent 0 46px, var(--plank) 46px 49px),
+      var(--desk);
+  }
+  [data-theme="night"] #showcase{
+    background:
+      radial-gradient(700px 420px at 80% -6%, var(--desk-glow), transparent 55%),
+      repeating-linear-gradient(90deg, transparent 0 7px, var(--grain) 7px 8px),
+      repeating-linear-gradient(0deg, var(--plank-hi) 0 46px, var(--plank-lo) 46px 92px),
       repeating-linear-gradient(0deg, transparent 0 46px, var(--plank) 46px 49px),
       var(--desk);
   }
