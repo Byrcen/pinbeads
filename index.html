@@ -11,52 +11,59 @@
     font-display:swap;   /* 加载中/失败回退系统字体，不开天窗 */
   }
   :root{
-    /* —— 白天（暖光台面）—— */
-    --desk:#e6d8c0;            /* 台面基色（比盘面深，制造远近层次）*/
-    --desk-glow:#fff4e0;       /* 右上角台灯光晕 */
-    --board-base:#f3ece0;      /* 盘面底板（浅硅胶）*/
-    --panel:#fffdf8;           /* 卡片/面板 */
-    --panel-2:#fff;            /* 更亮的卡片内层（按钮/卡片白底）*/
-    --soft:#fff7ee;            /* 选中/hover 暖底 */
-    --soft-2:#fffaf2;          /* 次级 hover 暖底 */
-    --chip:#f3ecde;            /* 小标签/进度槽底 */
-    --bg:#fbf6ee;              /* 兼容旧引用 */
-    --ink:#4a4036; --muted:#9a8f80;
-    --line:#ece2d3;
-    --accent:#ff8a5b; --accent2:#ffd23f;
-    --ok:#4cae7e; --wait:#f4a82c; --done:#7d8fb3;
-    --shadow:0 6px 22px rgba(120,90,50,.10);
-    --shadow-lg:0 14px 40px rgba(120,80,40,.16);
-    /* canvas 用（drawPegboard / 空格 / 豆子 AO / 夜间辉光）*/
+    /* —— 白天（亮堂木屋）—— */
+    --desk:#b8854f;            /* 木桌台面 */
+    --desk-glow:#e0b070;       /* 右上角窗光 */
+    --board-base:#f3ece0;      /* 盘面底板（盘面不参与像素化，保留原值）*/
+    --panel:#f4e4c1;           /* 羊皮纸面板 */
+    --panel-2:#faf0d8;         /* 更亮的羊皮纸内层 */
+    --soft:#efdcae;            /* 选中/hover 底 */
+    --soft-2:#f6e8c4;          /* 次级 hover 底 */
+    --chip:#e3cf9e;            /* 槽位/标签底 */
+    --bg:#f4e4c1;              /* 兼容旧引用 */
+    --ink:#4a3220; --muted:#8a7355;
+    --line:#6b4a2b;            /* 深木边框 */
+    --accent:#d4a017; --accent2:#ffd23f;   /* 泰拉瑞亚金 */
+    --ok:#3e9e5f; --wait:#e0941f; --done:#7d8fb3;
+    --shadow:4px 4px 0 rgba(74,50,32,.28);      /* 像素硬阴影 */
+    --shadow-lg:6px 6px 0 rgba(74,50,32,.32);
+    /* 像素木框造型 */
+    --bevel-light:rgba(255,246,220,.9);    /* 木框上受光 */
+    --bevel-dark:rgba(58,38,22,.32);       /* 木框下背光 */
+    --plank:rgba(74,50,32,.16);            /* 木板拼缝 */
+    /* canvas 用（drawPegboard / 空格 / 豆子 AO / 夜间辉光）——原样保留 */
     --peg-base:#e8dcc8;        /* 洞洞板底 */
     --peg-dot:rgba(140,120,90,.16);
     --cell-target:243,236,224; /* 空格朝此色混合(=board-base 的 rgb) */
     --cell-stroke:rgba(150,130,100,.18);
     --cell-text:rgba(120,100,75,.55);
     --bead-glow:rgba(0,0,0,0); /* 白天无辉光 */
-    --toast-bg:#4a4036; --toast-ink:#fff;   /* toast 深底浅字（不复用 --ink，避免夜间反转）*/
+    --toast-bg:#3a2616; --toast-ink:#f0dfc0;   /* 深木牌匾 toast */
   }
-  /* —— 夜间（暖夜灯，非冷科技黑）—— */
+  /* —— 夜间（油灯木屋）—— */
   [data-theme="night"]{
-    --desk:#221b15; --desk-glow:#4a3318;
+    --desk:#2a1d12; --desk-glow:#5a3a1a;
     --board-base:#352c23;
-    --panel:#2e2620; --panel-2:#372e26;
-    --soft:#3a2f24; --soft-2:#342a20;
-    --chip:#3d3328;
-    --bg:#221b15;
-    --ink:#f0e6d6; --muted:#a89880;
-    --line:#473c30;
-    --accent:#ff9d6b; --accent2:#ffbf7a;
+    --panel:#3a2c1d; --panel-2:#463624;
+    --soft:#4a3826; --soft-2:#42321f;
+    --chip:#2f2114;
+    --bg:#2a1d12;
+    --ink:#f0dfc0; --muted:#b09a76;
+    --line:#1f1409;
+    --accent:#ff9d3d; --accent2:#ffcc55;   /* 油灯橙 + 暖金 */
     --ok:#5fc08e; --wait:#f0b154; --done:#8d9ec2;
-    --shadow:0 6px 22px rgba(0,0,0,.40);
-    --shadow-lg:0 14px 40px rgba(0,0,0,.50);
+    --shadow:4px 4px 0 rgba(0,0,0,.45);
+    --shadow-lg:6px 6px 0 rgba(0,0,0,.55);
+    --bevel-light:rgba(255,220,160,.16);
+    --bevel-dark:rgba(0,0,0,.5);
+    --plank:rgba(0,0,0,.28);
     --peg-base:#352c23;
     --peg-dot:rgba(255,225,180,.07);
     --cell-target:53,44,35;
     --cell-stroke:rgba(255,225,180,.12);
     --cell-text:rgba(255,225,180,.40);
     --bead-glow:rgba(255,170,110,.55);
-    --toast-bg:#3d3328; --toast-ink:#f0e6d6;   /* 夜间 toast：深暖底 + 浅暖字 */
+    --toast-bg:#1f1409; --toast-ink:#f0dfc0;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -64,13 +71,9 @@
     margin:0; font-family:'Fusion Pixel',-apple-system,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
     background:
       radial-gradient(1100px 720px at 82% -12%, var(--desk-glow), transparent 60%),
+      repeating-linear-gradient(0deg, transparent 0 46px, var(--plank) 46px 49px),
       var(--desk);
     color:var(--ink); overflow:hidden;
-    transition:background-color .28s ease, color .28s ease;
-  }
-  /* 主题切换时大面积换色平滑过渡（克制：仅颜色相关属性）*/
-  header, aside, main, .toolbar, .palette, .scard, .pgroup, .sheet, .swatch, .icon-btn{
-    transition:background-color .28s ease, color .28s ease, border-color .28s ease, box-shadow .28s ease;
   }
   .app{display:grid; grid-template-columns:1fr 300px; grid-template-rows:auto 1fr; height:100vh}
   header{
