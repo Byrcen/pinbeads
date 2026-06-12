@@ -87,6 +87,7 @@ node server.js
   sessions.js  # 会话状态机（纯函数，server 与测试共用）
   test/        # node:test 单测（node --test）
   docs/        # 设计文档与实现计划
+  assets/      # 静态资源：Fusion Pixel 像素字体（OFL-1.1，许可证随附）
   README.md
 ```
 
@@ -94,6 +95,7 @@ node server.js
 
 - 进度、设置、作品廊都存在浏览器 localStorage，纯本地，不上传任何数据。
 - 桥只监听 `localhost`，仅本机可访问。
+- 界面字体为开源像素字体「缝合怪 Fusion Pixel 12px」（OFL-1.1，文件与许可证在 `assets/fonts/`）；字体加载失败时自动回退系统字体。
 
 ## 许可证
 
