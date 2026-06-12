@@ -36,6 +36,7 @@
     --grain:rgba(74,50,32,.045);       /* 细木纹 */
     /* canvas 用（drawPegboard / 空格 / 豆子 AO / 夜间辉光）——原样保留 */
     --peg-base:#e8dcc8;        /* 洞洞板底 */
+    --peg-stroke:#8a6a42;      /* 底板像素木框描边 */
     --peg-dot:rgba(140,120,90,.16);
     --cell-target:243,236,224; /* 空格朝此色混合(=board-base 的 rgb) */
     --cell-stroke:rgba(150,130,100,.18);
@@ -64,6 +65,7 @@
     --plank-lo:rgba(0,0,0,.10);
     --grain:rgba(0,0,0,.10);
     --peg-base:#352c23;
+    --peg-stroke:#1f1409;
     --peg-dot:rgba(255,225,180,.07);
     --cell-target:53,44,35;
     --cell-stroke:rgba(255,225,180,.12);
@@ -662,6 +664,7 @@ function applyThemeVars(){
   const tgt=(g('--cell-target')||'243,236,224').split(',').map(n=>+n);
   TH={
     peg:g('--peg-base')||'#e8dcc8',
+    pegStroke:g('--peg-stroke')||'#8a6a42',
     pegDot:g('--peg-dot')||'rgba(140,120,90,.16)',
     cellTarget:(tgt.length===3?tgt:[243,236,224]),
     cellStroke:g('--cell-stroke')||'rgba(150,130,100,.18)',
@@ -860,8 +863,13 @@ function drawBead(px,py,s,hex,f=0,cool=0,back=false,seed=0){
   }
 }
 function drawPegboard(x,y,w,h,s){
-  bctx.fillStyle=TH.peg;
-  roundRect(x-s*0.35,y-s*0.35,w+s*0.7,h+s*0.7,s*0.5); bctx.fill();
+  // 像素木框底板：方角 + 深木描边 + 上亮下暗 bevel（豆子/孔不在此函数，保持不动）
+  const m=s*0.35, X=x-m, Y=y-m, W=w+2*m, H=h+2*m;
+  const bw=Math.max(2,Math.round(s*0.12));
+  bctx.fillStyle=TH.pegStroke; bctx.fillRect(X,Y,W,H);                    // 描边层
+  bctx.fillStyle=TH.peg;       bctx.fillRect(X+bw,Y+bw,W-2*bw,H-2*bw);    // 板面
+  bctx.fillStyle='rgba(255,246,220,.30)'; bctx.fillRect(X+bw,Y+bw,W-2*bw,bw);        // 顶部受光
+  bctx.fillStyle='rgba(40,25,12,.22)';    bctx.fillRect(X+bw,Y+H-2*bw,W-2*bw,bw);    // 底部背光
   bctx.fillStyle=TH.pegDot;
   const p=state.pattern;
   for(let yy=0;yy<p.height;yy++)for(let xx=0;xx<p.width;xx++){
