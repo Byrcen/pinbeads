@@ -389,29 +389,261 @@
   .wd-actions button.primary{background:var(--accent); color:#fff; border-color:var(--line)}
   .wd-actions button.primary:hover{background:var(--accent2); color:#4a3220}
   .wd-actions button.danger:hover{border-color:#b94a48; color:#b94a48}
+  /* 像素图标：12×12 整数 rect 拼画，currentColor 继承按钮文字色 */
+  .pi{width:15px; height:15px; flex:none; display:inline-block; vertical-align:-2px}
+  .tool .pi{width:16px; height:16px; vertical-align:-3px}
 </style>
 </head>
 <body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="pi-logo" viewBox="0 0 12 12"><!-- 拼豆豆粒：带中孔的像素方形圆环 -->
+    <rect x="3" y="1" width="6" height="2" fill="currentColor"/>
+    <rect x="1" y="3" width="2" height="6" fill="currentColor"/>
+    <rect x="9" y="3" width="2" height="6" fill="currentColor"/>
+    <rect x="3" y="9" width="6" height="2" fill="currentColor"/>
+    <rect x="3" y="3" width="2" height="2" fill="currentColor"/>
+    <rect x="7" y="3" width="2" height="2" fill="currentColor"/>
+    <rect x="3" y="7" width="2" height="2" fill="currentColor"/>
+    <rect x="7" y="7" width="2" height="2" fill="currentColor"/>
+  </symbol>
+  <symbol id="pi-picture" viewBox="0 0 12 12"><!-- 画框里山+太阳 -->
+    <rect x="1" y="1" width="10" height="8" fill="none" stroke="currentColor" stroke-width="1"/>
+    <rect x="1" y="1" width="10" height="1" fill="currentColor"/>
+    <rect x="1" y="8" width="10" height="1" fill="currentColor"/>
+    <rect x="1" y="1" width="1" height="8" fill="currentColor"/>
+    <rect x="10" y="1" width="1" height="8" fill="currentColor"/>
+    <rect x="8" y="3" width="2" height="2" fill="#ffd23f"/>
+    <rect x="3" y="5" width="2" height="3" fill="currentColor"/>
+    <rect x="5" y="4" width="2" height="4" fill="currentColor"/>
+    <rect x="7" y="6" width="3" height="2" fill="currentColor"/>
+    <rect x="4" y="10" width="4" height="1" fill="currentColor"/>
+  </symbol>
+  <symbol id="pi-trophy" viewBox="0 0 12 12"><!-- 奖杯 -->
+    <rect x="3" y="1" width="6" height="5" fill="currentColor"/>
+    <rect x="2" y="2" width="1" height="3" fill="currentColor"/>
+    <rect x="9" y="2" width="1" height="3" fill="currentColor"/>
+    <rect x="4" y="6" width="4" height="1" fill="currentColor"/>
+    <rect x="5" y="7" width="2" height="2" fill="currentColor"/>
+    <rect x="3" y="9" width="6" height="1" fill="currentColor"/>
+    <rect x="3" y="10" width="6" height="1" fill="currentColor"/>
+    <rect x="5" y="3" width="2" height="2" fill="#ffd23f"/>
+  </symbol>
+  <symbol id="pi-relax" viewBox="0 0 12 12"><!-- 眯眼笑脸 -->
+    <rect x="2" y="1" width="8" height="1" fill="currentColor"/>
+    <rect x="1" y="2" width="1" height="8" fill="currentColor"/>
+    <rect x="10" y="2" width="1" height="8" fill="currentColor"/>
+    <rect x="2" y="10" width="8" height="1" fill="currentColor"/>
+    <rect x="3" y="4" width="2" height="1" fill="currentColor"/>
+    <rect x="7" y="4" width="2" height="1" fill="currentColor"/>
+    <rect x="3" y="7" width="1" height="1" fill="currentColor"/>
+    <rect x="8" y="7" width="1" height="1" fill="currentColor"/>
+    <rect x="4" y="8" width="4" height="1" fill="currentColor"/>
+  </symbol>
+  <symbol id="pi-palette" viewBox="0 0 12 12"><!-- 调色盘 -->
+    <rect x="3" y="1" width="6" height="1" fill="currentColor"/>
+    <rect x="1" y="3" width="1" height="5" fill="currentColor"/>
+    <rect x="10" y="3" width="1" height="3" fill="currentColor"/>
+    <rect x="2" y="2" width="1" height="1" fill="currentColor"/>
+    <rect x="9" y="2" width="1" height="1" fill="currentColor"/>
+    <rect x="2" y="8" width="1" height="1" fill="currentColor"/>
+    <rect x="3" y="9" width="2" height="1" fill="currentColor"/>
+    <rect x="5" y="10" width="4" height="1" fill="currentColor"/>
+    <rect x="9" y="8" width="1" height="2" fill="currentColor"/>
+    <rect x="8" y="6" width="2" height="2" fill="currentColor"/>
+    <rect x="3" y="3" width="2" height="2" fill="#e84a4a"/>
+    <rect x="7" y="3" width="2" height="2" fill="#ffd23f"/>
+    <rect x="3" y="6" width="2" height="2" fill="#4a8fe8"/>
+    <rect x="6" y="7" width="2" height="2" fill="#4ae87a"/>
+  </symbol>
+  <symbol id="pi-bulb" viewBox="0 0 12 12"><!-- 灯泡 -->
+    <rect x="4" y="1" width="4" height="1" fill="currentColor"/>
+    <rect x="3" y="2" width="1" height="3" fill="currentColor"/>
+    <rect x="8" y="2" width="1" height="3" fill="currentColor"/>
+    <rect x="2" y="3" width="1" height="3" fill="currentColor"/>
+    <rect x="9" y="3" width="1" height="3" fill="currentColor"/>
+    <rect x="3" y="6" width="6" height="2" fill="currentColor"/>
+    <rect x="4" y="8" width="4" height="1" fill="currentColor"/>
+    <rect x="4" y="9" width="4" height="1" fill="currentColor"/>
+    <rect x="5" y="10" width="2" height="1" fill="currentColor"/>
+    <rect x="4" y="3" width="4" height="3" fill="#ffd23f"/>
+  </symbol>
+  <symbol id="pi-brush" viewBox="0 0 12 12"><!-- 画笔斜杆+笔头 -->
+    <rect x="8" y="1" width="2" height="2" fill="currentColor"/>
+    <rect x="7" y="3" width="2" height="2" fill="currentColor"/>
+    <rect x="6" y="5" width="2" height="2" fill="currentColor"/>
+    <rect x="5" y="7" width="2" height="2" fill="currentColor"/>
+    <rect x="4" y="9" width="2" height="1" fill="currentColor"/>
+    <rect x="3" y="10" width="2" height="1" fill="currentColor"/>
+    <rect x="3" y="9" width="1" height="2" fill="#ff7a2d"/>
+    <rect x="4" y="10" width="1" height="1" fill="#ff7a2d"/>
+  </symbol>
+  <symbol id="pi-eraser" viewBox="0 0 12 12"><!-- 橡皮块 -->
+    <rect x="1" y="4" width="8" height="5" fill="currentColor"/>
+    <rect x="9" y="3" width="2" height="6" fill="currentColor"/>
+    <rect x="1" y="9" width="4" height="2" fill="currentColor"/>
+    <rect x="1" y="4" width="4" height="5" fill="#e84a4a"/>
+    <rect x="5" y="4" width="6" height="5" fill="currentColor"/>
+  </symbol>
+  <symbol id="pi-search" viewBox="0 0 12 12"><!-- 放大镜 -->
+    <rect x="2" y="2" width="6" height="1" fill="currentColor"/>
+    <rect x="1" y="3" width="1" height="4" fill="currentColor"/>
+    <rect x="7" y="3" width="1" height="4" fill="currentColor"/>
+    <rect x="2" y="7" width="2" height="1" fill="currentColor"/>
+    <rect x="6" y="7" width="1" height="1" fill="currentColor"/>
+    <rect x="3" y="8" width="3" height="1" fill="currentColor"/>
+    <rect x="7" y="7" width="1" height="1" fill="currentColor"/>
+    <rect x="8" y="8" width="1" height="1" fill="currentColor"/>
+    <rect x="9" y="9" width="2" height="2" fill="currentColor"/>
+    <rect x="10" y="10" width="1" height="1" fill="currentColor"/>
+  </symbol>
+  <symbol id="pi-eye" viewBox="0 0 12 12"><!-- 眼睛 -->
+    <rect x="1" y="5" width="2" height="2" fill="currentColor"/>
+    <rect x="3" y="4" width="2" height="1" fill="currentColor"/>
+    <rect x="7" y="4" width="2" height="1" fill="currentColor"/>
+    <rect x="3" y="7" width="2" height="1" fill="currentColor"/>
+    <rect x="7" y="7" width="2" height="1" fill="currentColor"/>
+    <rect x="5" y="3" width="2" height="1" fill="currentColor"/>
+    <rect x="5" y="8" width="2" height="1" fill="currentColor"/>
+    <rect x="9" y="5" width="2" height="2" fill="currentColor"/>
+    <rect x="4" y="5" width="4" height="2" fill="currentColor"/>
+    <rect x="5" y="4" width="2" height="4" fill="currentColor"/>
+  </symbol>
+  <symbol id="pi-moon" viewBox="0 0 12 12"><!-- 月牙 -->
+    <rect x="5" y="1" width="3" height="1" fill="currentColor"/>
+    <rect x="4" y="2" width="2" height="1" fill="currentColor"/>
+    <rect x="3" y="3" width="2" height="1" fill="currentColor"/>
+    <rect x="2" y="4" width="2" height="4" fill="currentColor"/>
+    <rect x="3" y="8" width="2" height="1" fill="currentColor"/>
+    <rect x="4" y="9" width="2" height="1" fill="currentColor"/>
+    <rect x="5" y="10" width="3" height="1" fill="currentColor"/>
+    <rect x="8" y="9" width="1" height="1" fill="currentColor"/>
+    <rect x="9" y="7" width="1" height="2" fill="currentColor"/>
+    <rect x="9" y="4" width="1" height="3" fill="currentColor"/>
+    <rect x="8" y="3" width="1" height="1" fill="currentColor"/>
+    <rect x="7" y="2" width="1" height="1" fill="currentColor"/>
+  </symbol>
+  <symbol id="pi-sun" viewBox="0 0 12 12"><!-- 太阳带光芒 -->
+    <rect x="5" y="0" width="2" height="2" fill="currentColor"/>
+    <rect x="5" y="10" width="2" height="2" fill="currentColor"/>
+    <rect x="0" y="5" width="2" height="2" fill="currentColor"/>
+    <rect x="10" y="5" width="2" height="2" fill="currentColor"/>
+    <rect x="2" y="2" width="1" height="1" fill="currentColor"/>
+    <rect x="9" y="2" width="1" height="1" fill="currentColor"/>
+    <rect x="2" y="9" width="1" height="1" fill="currentColor"/>
+    <rect x="9" y="9" width="1" height="1" fill="currentColor"/>
+    <rect x="3" y="3" width="6" height="6" fill="currentColor"/>
+    <rect x="4" y="4" width="4" height="4" fill="#ffd23f"/>
+  </symbol>
+  <symbol id="pi-sound" viewBox="0 0 12 12"><!-- 喇叭+声波 -->
+    <rect x="1" y="4" width="3" height="4" fill="currentColor"/>
+    <rect x="4" y="3" width="1" height="6" fill="currentColor"/>
+    <rect x="5" y="2" width="1" height="8" fill="currentColor"/>
+    <rect x="6" y="1" width="1" height="10" fill="currentColor"/>
+    <rect x="8" y="4" width="1" height="4" fill="currentColor"/>
+    <rect x="9" y="3" width="1" height="6" fill="currentColor"/>
+    <rect x="10" y="2" width="1" height="8" fill="currentColor"/>
+  </symbol>
+  <symbol id="pi-mute" viewBox="0 0 12 12"><!-- 喇叭+斜杠禁音 -->
+    <rect x="1" y="4" width="3" height="4" fill="currentColor"/>
+    <rect x="4" y="3" width="1" height="6" fill="currentColor"/>
+    <rect x="5" y="2" width="1" height="8" fill="currentColor"/>
+    <rect x="6" y="1" width="1" height="10" fill="currentColor"/>
+    <rect x="8" y="1" width="2" height="2" fill="#e84a4a"/>
+    <rect x="9" y="3" width="2" height="2" fill="#e84a4a"/>
+    <rect x="9" y="5" width="1" height="1" fill="#e84a4a"/>
+    <rect x="8" y="6" width="1" height="2" fill="#e84a4a"/>
+    <rect x="7" y="8" width="1" height="2" fill="#e84a4a"/>
+  </symbol>
+  <symbol id="pi-help" viewBox="0 0 12 12"><!-- 粗问号 -->
+    <rect x="3" y="1" width="6" height="2" fill="currentColor"/>
+    <rect x="2" y="2" width="1" height="2" fill="currentColor"/>
+    <rect x="9" y="2" width="1" height="2" fill="currentColor"/>
+    <rect x="7" y="4" width="2" height="2" fill="currentColor"/>
+    <rect x="5" y="6" width="2" height="2" fill="currentColor"/>
+    <rect x="5" y="9" width="2" height="2" fill="currentColor"/>
+  </symbol>
+  <symbol id="pi-undo" viewBox="0 0 12 12"><!-- 左折返箭头 -->
+    <rect x="1" y="4" width="2" height="1" fill="currentColor"/>
+    <rect x="2" y="3" width="2" height="1" fill="currentColor"/>
+    <rect x="3" y="2" width="2" height="1" fill="currentColor"/>
+    <rect x="2" y="5" width="2" height="1" fill="currentColor"/>
+    <rect x="3" y="6" width="2" height="1" fill="currentColor"/>
+    <rect x="3" y="4" width="7" height="1" fill="currentColor"/>
+    <rect x="9" y="5" width="1" height="4" fill="currentColor"/>
+    <rect x="4" y="8" width="5" height="1" fill="currentColor"/>
+  </symbol>
+  <symbol id="pi-iron" viewBox="0 0 12 12"><!-- 熨斗 -->
+    <rect x="1" y="3" width="8" height="5" fill="currentColor"/>
+    <rect x="9" y="4" width="2" height="3" fill="currentColor"/>
+    <rect x="6" y="1" width="2" height="2" fill="currentColor"/>
+    <rect x="1" y="8" width="10" height="2" fill="currentColor"/>
+    <rect x="3" y="5" width="1" height="1" fill="#ff7a2d"/>
+    <rect x="5" y="5" width="1" height="1" fill="#ff7a2d"/>
+    <rect x="7" y="5" width="1" height="1" fill="#ff7a2d"/>
+  </symbol>
+  <symbol id="pi-clear" viewBox="0 0 12 12"><!-- 水桶泼水 -->
+    <rect x="3" y="1" width="4" height="1" fill="currentColor"/>
+    <rect x="2" y="2" width="1" height="6" fill="currentColor"/>
+    <rect x="7" y="2" width="1" height="6" fill="currentColor"/>
+    <rect x="3" y="8" width="4" height="1" fill="currentColor"/>
+    <rect x="8" y="4" width="3" height="1" fill="currentColor"/>
+    <rect x="9" y="5" width="2" height="4" fill="currentColor"/>
+    <rect x="8" y="8" width="1" height="1" fill="currentColor"/>
+    <rect x="3" y="3" width="4" height="5" fill="#4a8fe8"/>
+    <rect x="10" y="6" width="1" height="1" fill="#4a8fe8"/>
+    <rect x="10" y="8" width="1" height="1" fill="#4a8fe8"/>
+  </symbol>
+  <symbol id="pi-dice" viewBox="0 0 12 12"><!-- 骰子三点 -->
+    <rect x="1" y="1" width="10" height="10" fill="currentColor"/>
+    <rect x="2" y="2" width="8" height="8" fill="none" stroke="var(--panel-2,#fff)" stroke-width="0"/>
+    <rect x="3" y="3" width="2" height="2" fill="var(--bg,#f5f0e8)"/>
+    <rect x="5" y="5" width="2" height="2" fill="var(--bg,#f5f0e8)"/>
+    <rect x="7" y="7" width="2" height="2" fill="var(--bg,#f5f0e8)"/>
+  </symbol>
+  <symbol id="pi-camera" viewBox="0 0 12 12"><!-- 相机 -->
+    <rect x="1" y="3" width="10" height="7" fill="currentColor"/>
+    <rect x="4" y="1" width="4" height="2" fill="currentColor"/>
+    <rect x="3" y="4" width="6" height="5" fill="currentColor"/>
+    <rect x="4" y="5" width="4" height="3" fill="var(--bg,#f5f0e8)"/>
+    <rect x="5" y="6" width="2" height="1" fill="currentColor"/>
+    <rect x="9" y="4" width="1" height="1" fill="#ffd23f"/>
+  </symbol>
+  <symbol id="pi-sleep" viewBox="0 0 24 24"><!-- 睡觉的显示器（屏幕上 Z Z） -->
+    <rect x="2" y="4" width="20" height="13" fill="currentColor"/>
+    <rect x="3" y="5" width="18" height="11" fill="var(--bg,#1a1a2e)"/>
+    <rect x="9" y="18" width="6" height="2" fill="currentColor"/>
+    <rect x="6" y="20" width="12" height="1" fill="currentColor"/>
+    <rect x="8" y="8" width="4" height="1" fill="#ffd23f"/>
+    <rect x="11" y="9" width="1" height="1" fill="#ffd23f"/>
+    <rect x="10" y="10" width="1" height="1" fill="#ffd23f"/>
+    <rect x="9" y="11" width="1" height="1" fill="#ffd23f"/>
+    <rect x="8" y="12" width="4" height="1" fill="#ffd23f"/>
+    <rect x="13" y="7" width="3" height="1" fill="#ffd23f"/>
+    <rect x="15" y="8" width="1" height="1" fill="#ffd23f"/>
+    <rect x="14" y="9" width="1" height="1" fill="#ffd23f"/>
+    <rect x="13" y="10" width="3" height="1" fill="#ffd23f"/>
+  </symbol>
+</svg>
 <div class="app">
   <header>
-    <div class="logo">🧩 <b>拼豆</b> 时光</div>
+    <div class="logo"><svg class="pi"><use href="#pi-logo"/></svg> <b>拼豆</b> 时光</div>
     <div class="sub">等代码的间隙，拼一颗豆</div>
     <div class="spacer"></div>
     <div class="nav-group">
-      <button class="icon-btn nav" id="btnPick">🖼 选图案</button>
-      <button class="icon-btn nav" id="btnGallery">🏆 我的作品</button>
+      <button class="icon-btn nav" id="btnPick"><svg class="pi"><use href="#pi-picture"/></svg> 选图案</button>
+      <button class="icon-btn nav" id="btnGallery"><svg class="pi"><use href="#pi-trophy"/></svg> 我的作品</button>
     </div>
-    <button class="icon-btn active" id="btnGuided">😌 无忧模式</button>
+    <button class="icon-btn active" id="btnGuided"><svg class="pi"><use href="#pi-relax"/></svg> 无忧模式</button>
     <div class="tool-group" role="group" aria-label="工具">
-      <button class="tool" id="btnHint" title="高亮当前色">💡</button>
-      <button class="tool active" id="btnMode" data-mode="draw" title="绘制 / 平移">🖌</button>
-      <button class="tool" id="btnErase" title="橡皮">🧽</button>
-      <button class="tool" id="btnCheck" title="检查（点一下全图找错）">🔍</button>
-      <button class="tool" id="btnLiveCheck" title="实时纠错（放错即标红点）">👁</button>
+      <button class="tool" id="btnHint" title="高亮当前色"><svg class="pi"><use href="#pi-bulb"/></svg></button>
+      <button class="tool active" id="btnMode" data-mode="draw" title="绘制 / 平移"><svg class="pi"><use href="#pi-brush"/></svg></button>
+      <button class="tool" id="btnErase" title="橡皮"><svg class="pi"><use href="#pi-eraser"/></svg></button>
+      <button class="tool" id="btnCheck" title="检查（点一下全图找错）"><svg class="pi"><use href="#pi-search"/></svg></button>
+      <button class="tool" id="btnLiveCheck" title="实时纠错（放错即标红点）"><svg class="pi"><use href="#pi-eye"/></svg></button>
     </div>
-    <button class="icon-btn" id="btnTheme" title="切换白天/夜间">🌙</button>
-    <button class="icon-btn" id="btnSound">🔊</button>
-    <button class="icon-btn" id="btnHelp" title="快捷键 & 操作帮助（按 ?）">❓</button>
+    <button class="icon-btn" id="btnTheme" title="切换白天/夜间"><svg class="pi"><use href="#pi-moon"/></svg></button>
+    <button class="icon-btn" id="btnSound"><svg class="pi"><use href="#pi-sound"/></svg></button>
+    <button class="icon-btn" id="btnHelp" title="快捷键 & 操作帮助（按 ?）"><svg class="pi"><use href="#pi-help"/></svg></button>
     <div id="banner"></div>
   </header>
 
@@ -424,10 +656,10 @@
       <span class="title" id="ptnName">—</span>
       <span>缩放</span>
       <input type="range" id="zoom" min="6" max="44" value="20">
-      <button class="icon-btn" id="btnUndo" disabled title="撤销上一步 (Ctrl/⌘+Z)">↩︎ 撤销</button>
+      <button class="icon-btn" id="btnUndo" disabled title="撤销上一步 (Ctrl/⌘+Z)"><svg class="pi"><use href="#pi-undo"/></svg> 撤销</button>
       <button class="icon-btn" id="btnFit">适配</button>
-      <button class="icon-btn iron-btn" id="btnIron" disabled>🔥 熨烫</button>
-      <button class="icon-btn" id="btnClear" title="清除当前所有拼豆，从头再拼">🧼 清空</button>
+      <button class="icon-btn iron-btn" id="btnIron" disabled><svg class="pi"><use href="#pi-iron"/></svg> 熨烫</button>
+      <button class="icon-btn" id="btnClear" title="清除当前所有拼豆，从头再拼"><svg class="pi"><use href="#pi-clear"/></svg> 清空</button>
       <div class="progress-wrap"><div class="progress-bar" id="pbar"></div></div>
       <span class="progress-num" id="pnum">0%</span>
     </div>
@@ -458,13 +690,13 @@
     <span class="x" data-close>×</span>
     <h2>选一张图案开拼</h2>
     <div class="desc">点内置图案直接开拼，或上传自己的图片自动转成拼豆模板。
-      <button class="icon-btn" id="btnRandom" style="margin-left:8px">🎲 随手拼一张</button></div>
+      <button class="icon-btn" id="btnRandom" style="margin-left:8px"><svg class="pi"><use href="#pi-dice"/></svg> 随手拼一张</button></div>
     <div id="wipSection" hidden>
       <div class="sc-section-label" style="color:var(--accent)">▶ 继续拼（未完成）</div>
       <div class="grid" id="wipGrid"></div>
     </div>
     <div class="uploader" id="uploader">
-      📷 点击或拖入图片，自动生成拼豆模板
+      <svg class="pi"><use href="#pi-camera"/></svg> 点击或拖入图片，自动生成拼豆模板
       <input type="file" id="file" accept="image/*" hidden>
       <div class="row" style="justify-content:center">
         <span style="font-size:12px">网格宽度</span>
@@ -483,7 +715,7 @@
 <div id="showcase">
   <div class="sc-head">
     <div>
-      <div class="t">🏆 我的<b>拼豆展示墙</b></div>
+      <div class="t"><svg class="pi"><use href="#pi-trophy"/></svg> 我的<b>拼豆展示墙</b></div>
       <div class="sub">拼完的作品都挂在这儿 — 大的上墙，小的做成钥匙串</div>
     </div>
     <button class="sc-back" id="scBack">← 返回拼豆</button>
@@ -500,7 +732,7 @@
         <div class="wd-name" id="wdName"></div>
         <div class="wd-meta" id="wdMeta"></div>
         <div class="wd-actions">
-          <button class="primary" id="wdReplay">🧩 重新拼这张</button>
+          <button class="primary" id="wdReplay"><svg class="pi"><use href="#pi-logo"/></svg> 重新拼这张</button>
           <button id="wdExport">💾 保存图片</button>
           <button id="wdRename">✏️ 重命名</button>
           <button class="danger" id="wdDelete">🗑 删除</button>
@@ -531,8 +763,8 @@
     <div class="help-row"><span class="keys"><kbd>?</kbd> · <kbd>Esc</kbd></span><span class="txt">打开本帮助 / 关闭弹窗</span></div>
 
     <div class="help-sec">🎛 两种模式</div>
-    <div class="help-row"><span class="keys">😌 无忧</span><span class="txt">拿错色不会放进去，闭着眼也拼不错（默认）</span></div>
-    <div class="help-row"><span class="keys">🎨 自由</span><span class="txt">可放错色，再用 🔍 检查 找出和图纸不符的格子</span></div>
+    <div class="help-row"><span class="keys"><svg class="pi"><use href="#pi-relax"/></svg> 无忧</span><span class="txt">拿错色不会放进去，闭着眼也拼不错（默认）</span></div>
+    <div class="help-row"><span class="keys"><svg class="pi"><use href="#pi-palette"/></svg> 自由</span><span class="txt">可放错色，再用 <svg class="pi"><use href="#pi-search"/></svg> 检查 找出和图纸不符的格子</span></div>
   </div>
 </div>
 
@@ -609,7 +841,7 @@ function systemPrefersNight(){ try{ return matchMedia('(prefers-color-scheme: da
 function currentTheme(){ return document.documentElement.getAttribute('data-theme')==='night'?'night':'day'; }
 function applyTheme(t, persist){
   document.documentElement.setAttribute('data-theme', t==='night'?'night':'day');
-  const btn=document.getElementById('btnTheme'); if(btn) btn.textContent = t==='night'?'☀️':'🌙';
+  const btn=document.getElementById('btnTheme'); if(btn) btn.innerHTML = '<svg class="pi"><use href="#pi-'+(t==='night'?'sun':'moon')+'"/></svg>';
   if(persist){ try{ localStorage.setItem(THEME_KEY, t); }catch(_){} }
   if(typeof applyThemeVars==='function') applyThemeVars();   // 刷新 canvas 取色（Task 3 定义）
   if(typeof draw==='function') draw();                       // 重绘盘面以应用新色
@@ -1697,10 +1929,10 @@ document.getElementById('btnPick').onclick=()=>{ buildPicker(); document.getElem
 document.getElementById('btnGallery').onclick=()=>{ buildShowcase(); document.getElementById('showcase').classList.add('show'); };
 document.getElementById('btnHint').onclick=e=>{ state.hint=!state.hint; e.currentTarget.classList.toggle('active',state.hint); draw(); };
 document.getElementById('btnMode').onclick=e=>{ state.mode=state.mode==='draw'?'pan':'draw';
-  e.currentTarget.dataset.mode=state.mode; e.currentTarget.textContent=state.mode==='draw'?'🖌':'✋';
+  e.currentTarget.dataset.mode=state.mode; e.currentTarget.innerHTML=state.mode==='draw'?'<svg class="pi"><use href="#pi-brush"/></svg>':'✋';
   e.currentTarget.title=state.mode==='draw'?'绘制 / 平移':'平移 / 绘制';
   e.currentTarget.classList.toggle('active', state.mode==='pan'?false:true); };
-document.getElementById('btnSound').onclick=e=>{ const on=Audio.toggle(); e.currentTarget.textContent=on?'🔊':'🔇'; };
+document.getElementById('btnSound').onclick=e=>{ const on=Audio.toggle(); e.currentTarget.innerHTML='<svg class="pi"><use href="#pi-'+(on?'sound':'mute')+'"/></svg>'; };
 document.getElementById('btnHelp').onclick=()=>document.getElementById('helpModal').classList.add('show');
 document.getElementById('zoom').oninput=e=>{ applyZoom(+e.target.value, stage.clientWidth/2, stage.clientHeight/2); draw(); };
 document.getElementById('btnFit').onclick=fit;
@@ -1716,7 +1948,7 @@ document.getElementById('btnClear').onclick=()=>{
 function setErase(v){ state.erase=v;
   document.getElementById('btnErase').classList.toggle('active', v);
   if(v){ state.mode='draw'; const bm=document.getElementById('btnMode');
-    bm.dataset.mode='draw'; bm.textContent='🖌'; bm.classList.add('active'); } }   // 图标态（保留新顶栏风格）
+    bm.dataset.mode='draw'; bm.innerHTML='<svg class="pi"><use href="#pi-brush"/></svg>'; bm.classList.add('active'); } }   // 图标态（保留新顶栏风格）
 document.getElementById('btnErase').onclick=()=>setErase(!state.erase);
 document.getElementById('btnCheck').onclick=()=>checkBoard();
 document.getElementById('btnLiveCheck').onclick=e=>{ state.liveCheck=!state.liveCheck;
@@ -1725,7 +1957,7 @@ document.getElementById('btnLiveCheck').onclick=e=>{ state.liveCheck=!state.live
   toast(state.liveCheck?'👁 实时纠错已开：放错会标小红点':'已关闭实时纠错'); };
 // 无忧模式 ⇄ 自由模式：无忧下拿错色不会放进去（拼不出错），自由下可放错并用「检查」找茬
 function syncGuidedUI(){ const b=document.getElementById('btnGuided'); if(!b)return;
-  b.textContent = state.guided? '😌 无忧模式' : '🎨 自由模式';
+  b.innerHTML = state.guided? '<svg class="pi"><use href="#pi-relax"/></svg> 无忧模式' : '<svg class="pi"><use href="#pi-palette"/></svg> 自由模式';
   b.classList.toggle('active', state.guided);
   // 自由模式才显示「检查 / 实时纠错」（无忧模式拼不出错，无需）
   const chk=document.getElementById('btnCheck'); if(chk) chk.style.display = state.guided? 'none' : '';
