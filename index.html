@@ -78,35 +78,42 @@
   .app{display:grid; grid-template-columns:1fr 300px; grid-template-rows:auto 1fr; height:100vh}
   header{
     grid-column:1/3; display:flex; align-items:center; gap:14px; padding:10px 18px;
-    background:var(--panel); border-bottom:1px solid var(--line); position:relative; z-index:5;
+    background:
+      repeating-linear-gradient(90deg, transparent 0 130px, var(--plank) 130px 133px),
+      linear-gradient(180deg, color-mix(in srgb, var(--desk) 86%, #fff), var(--desk));
+    border-bottom:3px solid var(--line); position:relative; z-index:5;
+    box-shadow:inset 0 3px 0 var(--bevel-light), inset 0 -3px 0 var(--bevel-dark);
   }
   header .logo{font-weight:700; font-size:18px; letter-spacing:.5px}
-  header .logo b{color:var(--accent)}
-  header .sub{color:var(--muted); font-size:12px}
+  header .logo b{color:var(--accent2); text-shadow:2px 2px 0 rgba(58,38,22,.5)}  /* 金字+像素投影 */
+  header .sub{color:var(--ink); opacity:.7; font-size:12px}
   header .spacer{flex:1}
   .icon-btn{
-    border:1px solid var(--line); background:var(--panel-2); color:var(--ink); border-radius:10px;
-    padding:7px 12px; cursor:pointer; font-size:13px; transition:.15s; display:inline-flex; gap:6px; align-items:center;
+    border:3px solid var(--line); background:var(--panel-2); color:var(--ink); border-radius:0;
+    padding:6px 12px; cursor:pointer; font-size:13px; display:inline-flex; gap:6px; align-items:center;
+    box-shadow:inset 0 2px 0 var(--bevel-light), inset 0 -2px 0 var(--bevel-dark), var(--shadow);
   }
-  .icon-btn:hover{border-color:var(--accent); color:var(--accent)}
-  .icon-btn.active{background:var(--accent); color:#fff; border-color:var(--accent)}
+  .icon-btn:hover{border-color:var(--accent2); color:var(--accent)}
+  .icon-btn:active{transform:translate(3px,3px);
+    box-shadow:inset 0 2px 0 var(--bevel-light), inset 0 -2px 0 var(--bevel-dark)}   /* 按下沉入，外阴影消失 */
+  .icon-btn.active{background:var(--accent); color:#fff; border-color:var(--line)}
   .nav-group{display:flex; gap:8px}
-  .tool-group{display:inline-flex; border:1px solid var(--line); border-radius:12px;
-    background:var(--panel-2); overflow:hidden; box-shadow:var(--shadow)}
+  .tool-group{display:inline-flex; border:3px solid var(--line); border-radius:0;
+    background:var(--chip); box-shadow:var(--shadow)}
   .tool-group .tool{border:0; background:transparent; color:var(--ink); cursor:pointer;
-    padding:7px 12px; font-size:15px; line-height:1; transition:.15s; border-left:1px solid var(--line)}
+    padding:7px 12px; font-size:15px; line-height:1; border-left:3px solid var(--line)}
   .tool-group .tool:first-child{border-left:0}
   .tool-group .tool:hover{background:var(--soft)}
-  .tool-group .tool.active{background:var(--accent); color:#fff}
+  .tool-group .tool.active{background:var(--soft); box-shadow:inset 0 0 0 3px var(--accent2)}  /* 选中格金框 */
   .iron-btn:disabled{opacity:.4; cursor:not-allowed}
-  .iron-btn.ready{background:linear-gradient(120deg,#ff8a3d,#ff5a3d); color:#fff; border-color:#ff6b3d;
-    animation:ironpulse 1.3s ease-in-out infinite}
-  @keyframes ironpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,107,61,.5)}50%{box-shadow:0 0 0 7px rgba(255,107,61,0)}}
+  .iron-btn.ready{background:#ff7a2d; color:#fff; border-color:var(--line);
+    animation:ironpulse 1s steps(1) infinite}
+  @keyframes ironpulse{0%,100%{background:#ff7a2d}50%{background:#ffa14d}}
 
   #banner{
     position:absolute; left:50%; top:64px; transform:translateX(-50%) translateY(-12px);
-    background:linear-gradient(120deg,var(--ok),#36a06f); color:#fff; padding:12px 22px; border-radius:14px;
-    box-shadow:var(--shadow); font-weight:600; opacity:0; pointer-events:none; transition:.35s; z-index:20; white-space:nowrap; cursor:pointer;
+    background:var(--ok); color:#fff; padding:12px 22px; border:3px solid var(--line); border-radius:0;
+    box-shadow:var(--shadow); font-weight:600; opacity:0; pointer-events:none; transition:.2s; z-index:20; white-space:nowrap; cursor:pointer;
   }
   #banner.show{opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto}
 
