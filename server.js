@@ -108,10 +108,26 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // 静态资源（像素字体等）：仅白名单目录 assets/，规范化路径防穿越
+  if (req.method === 'GET' && url.pathname.startsWith('/assets/')) {
+    const ASSETS = path.join(__dirname, 'assets');
+    const fp = path.normalize(path.join(__dirname, decodeURIComponent(url.pathname)));
+    if (!fp.startsWith(ASSETS + path.sep)) { res.writeHead(404); return res.end('not found'); }
+    const MIME = { '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8' };
+    try {
+      const data = fs.readFileSync(fp);
+      res.writeHead(200, {
+        'content-type': MIME[path.extname(fp).toLowerCase()] || 'application/octet-stream',
+        'cache-control': 'public, max-age=604800',
+      });
+      return res.end(data);
+    } catch (_) { res.writeHead(404); return res.end('not found'); }
+  }
+
   res.writeHead(404);
   res.end('not found');
 });
 
 server.listen(PORT, () => {
-  console.log(`拼豆 bridge listening  http://localhost:${PORT}`);
+  console.log(`拼豆 bridge listening  http://localhost:${server.address().port}`);
 });
