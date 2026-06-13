@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>拼豆 · 等代码的解压时光</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' shape-rendering='crispEdges' fill='%23ff5a7a'%3E%3Crect x='3' y='1' width='6' height='2'/%3E%3Crect x='1' y='3' width='2' height='6'/%3E%3Crect x='9' y='3' width='2' height='6'/%3E%3Crect x='3' y='9' width='6' height='2'/%3E%3Crect x='2' y='2' width='2' height='2'/%3E%3Crect x='8' y='2' width='2' height='2'/%3E%3Crect x='2' y='8' width='2' height='2'/%3E%3Crect x='8' y='8' width='2' height='2'/%3E%3Crect x='3' y='3' width='6' height='1'/%3E%3Crect x='3' y='8' width='6' height='1'/%3E%3Crect x='3' y='4' width='1' height='4'/%3E%3Crect x='8' y='4' width='1' height='4'/%3E%3C/svg%3E">
 <style>
   @font-face{
     font-family:'Fusion Pixel';
@@ -1177,16 +1178,16 @@ function drawPegboard(x,y,w,h,s){
 function markWrong(px,py,s){
   bctx.save();
   bctx.strokeStyle='rgba(232,40,40,.95)'; bctx.lineWidth=Math.max(2,s*0.09);
-  roundRect(px+s*0.06,py+s*0.06,s*0.88,s*0.88,s*0.28); bctx.stroke();
+  bctx.strokeRect(px+s*0.08, py+s*0.08, s*0.84, s*0.84);
   bctx.fillStyle='rgba(232,40,40,.95)';
-  bctx.beginPath(); bctx.arc(px+s*0.82, py+s*0.18, s*0.13, 0,7); bctx.fill();
+  bctx.fillRect(px+s*0.72, py+s*0.10, s*0.18, s*0.18);
   bctx.restore();
 }
 // 实时纠错：放错的格右上角一个低调小红点（带白边更清晰）
 function markWrongLive(px,py,s){
   bctx.save();
-  bctx.fillStyle='#fff'; bctx.beginPath(); bctx.arc(px+s*0.8, py+s*0.2, s*0.13, 0,7); bctx.fill();
-  bctx.fillStyle='rgba(232,40,40,.95)'; bctx.beginPath(); bctx.arc(px+s*0.8, py+s*0.2, s*0.1, 0,7); bctx.fill();
+  bctx.fillStyle='#fff'; bctx.fillRect(px+s*0.68, py+s*0.08, s*0.26, s*0.26);
+  bctx.fillStyle='rgba(232,40,40,.95)'; bctx.fillRect(px+s*0.71, py+s*0.11, s*0.20, s*0.20);
   bctx.restore();
 }
 
@@ -1461,7 +1462,7 @@ function confetti(){
     let alive=false;
     for(const p of parts){ p.x+=p.vx; p.y+=p.vy; p.vy+=0.05*DPR; p.r+=p.vr;
       if(p.y<fx.height+20){alive=true;}
-      fctx.save(); fctx.translate(p.x,p.y); fctx.rotate(p.r); fctx.fillStyle=p.c;
+      fctx.save(); fctx.translate(p.x,p.y); fctx.rotate(Math.round(p.r/(Math.PI/4))*(Math.PI/4)); fctx.fillStyle=p.c;
       fctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.6); fctx.restore(); }
     if(alive&&frames<240) requestAnimationFrame(run); else {fctx.clearRect(0,0,fx.width,fx.height);draw();}
   })();
