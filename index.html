@@ -481,6 +481,14 @@
     <rect x="3" y="9" width="1" height="2" fill="#ff7a2d"/>
     <rect x="4" y="10" width="1" height="1" fill="#ff7a2d"/>
   </symbol>
+  <symbol id="pi-hand" viewBox="0 0 12 12"><!-- 平移抓手 -->
+    <rect x="3" y="1" width="2" height="5" fill="currentColor"/>
+    <rect x="5" y="1" width="2" height="5" fill="currentColor"/>
+    <rect x="7" y="2" width="2" height="4" fill="currentColor"/>
+    <rect x="1" y="4" width="2" height="3" fill="currentColor"/>
+    <rect x="2" y="6" width="8" height="3" fill="currentColor"/>
+    <rect x="3" y="9" width="6" height="2" fill="currentColor"/>
+  </symbol>
   <symbol id="pi-eraser" viewBox="0 0 12 12"><!-- 橡皮：双色平块 -->
     <rect x="1" y="4" width="7" height="5" fill="currentColor"/>
     <rect x="2" y="3" width="6" height="1" fill="currentColor"/>
@@ -754,7 +762,7 @@
     <div class="help-sec">🖐 手势 / 鼠标</div>
     <div class="help-row"><span class="keys"><kbd>点</kbd><kbd>拖拽</kbd></span><span class="txt">放豆 / 连续涂一片</span></div>
     <div class="help-row"><span class="keys"><kbd>滚轮</kbd><kbd>触控板</kbd><kbd>双指</kbd></span><span class="txt">以光标为中心缩放</span></div>
-    <div class="help-row"><span class="keys"><kbd>空格</kbd>+拖拽 · <kbd>✋平移</kbd></span><span class="txt">移动画面</span></div>
+    <div class="help-row"><span class="keys"><kbd>空格</kbd>+拖拽 · <kbd><svg class="pi"><use href="#pi-hand"/></svg>平移</kbd></span><span class="txt">移动画面</span></div>
 
     <div class="help-sec">⌨️ 键盘</div>
     <div class="help-row"><span class="keys"><kbd>1</kbd>…<kbd>9</kbd><kbd>0</kbd></span><span class="txt">选颜色；<b>连按就是多位数</b> —— <kbd>1</kbd><kbd>2</kbd> = 12 号，够得到 10 号以上的色</span></div>
@@ -1932,7 +1940,7 @@ document.getElementById('btnPick').onclick=()=>{ buildPicker(); document.getElem
 document.getElementById('btnGallery').onclick=()=>{ buildShowcase(); document.getElementById('showcase').classList.add('show'); };
 document.getElementById('btnHint').onclick=e=>{ state.hint=!state.hint; e.currentTarget.classList.toggle('active',state.hint); draw(); };
 document.getElementById('btnMode').onclick=e=>{ state.mode=state.mode==='draw'?'pan':'draw';
-  e.currentTarget.dataset.mode=state.mode; e.currentTarget.innerHTML=state.mode==='draw'?'<svg class="pi"><use href="#pi-brush"/></svg>':'✋';
+  e.currentTarget.dataset.mode=state.mode; e.currentTarget.innerHTML=state.mode==='draw'?'<svg class="pi"><use href="#pi-brush"/></svg>':'<svg class="pi"><use href="#pi-hand"/></svg>';
   e.currentTarget.title=state.mode==='draw'?'绘制 / 平移':'平移 / 绘制';
   e.currentTarget.classList.toggle('active', state.mode==='pan'?false:true); };
 document.getElementById('btnSound').onclick=e=>{ const on=Audio.toggle(); e.currentTarget.innerHTML='<svg class="pi"><use href="#pi-'+(on?'sound':'mute')+'"/></svg>'; };
