@@ -105,7 +105,13 @@
   }
   header .logo{font-weight:700; font-size:18px; letter-spacing:.5px}
   header .logo b{color:var(--accent2); text-shadow:2px 2px 0 rgba(58,38,22,.5)}  /* 金字+像素投影 */
-  header .sub{color:var(--ink); opacity:.7; font-size:12px}
+  header .sub{color:var(--toast-ink); font-size:12px; padding:4px 12px; position:relative;
+    background:color-mix(in srgb, var(--desk) 55%, #1a0f06);
+    border:2px solid var(--line);
+    box-shadow:inset 0 2px 0 rgba(255,235,200,.12), 2px 2px 0 var(--bevel-dark)}
+  header .sub::before, header .sub::after{content:""; position:absolute; top:2px; width:3px; height:3px;
+    background:#c9b89a}
+  header .sub::before{left:3px} header .sub::after{right:3px}
   header .spacer{flex:1}
   .icon-btn{
     border:3px solid var(--line); background:var(--panel-2); color:var(--ink); border-radius:0;
@@ -162,8 +168,10 @@
     transition:width .25s steps(5)}
   .progress-num{font-size:12px; color:var(--muted); min-width:42px; text-align:right}
 
-  .palette{display:flex; gap:10px; padding:12px 16px 14px; background:var(--panel);
-    border-top:3px solid var(--line); overflow-x:auto}
+  .palette{display:flex; gap:10px; padding:12px 16px 14px; border-top:3px solid var(--line);
+    background:linear-gradient(180deg, var(--chip), var(--soft));
+    box-shadow:inset 0 3px 0 var(--bevel-dark), inset 0 -2px 0 var(--bevel-light);
+    overflow-x:auto}
   .swatch{
     --c:#ccc; min-width:56px; border:3px solid var(--line); border-radius:0; padding:7px 4px 6px;
     cursor:pointer; background:var(--chip); text-align:center; position:relative; user-select:none;
@@ -187,6 +195,7 @@
   .sessions{flex:1; overflow-y:auto; padding:10px}
   .empty-hint{color:var(--muted); font-size:12px; line-height:1.7; padding:10px; text-align:center}
   .empty-hint code{background:var(--chip); padding:1px 6px; border-radius:0; border:1px solid var(--line)}
+  .empty-hint .pi-big{width:48px; height:48px; display:block; margin:6px auto 10px; color:var(--muted)}
   .scard{
     border:3px solid var(--line); border-radius:0; padding:10px 12px; margin-bottom:10px; background:var(--panel-2);
     position:relative; overflow:hidden;
@@ -686,6 +695,7 @@
     <div class="filterpop" id="filterpop" hidden></div>
     <div class="sessions" id="sessions">
       <div class="empty-hint" id="emptyHint">
+        <svg class="pi pi-big"><use href="#pi-sleep"/></svg>
         还没收到 CC 事件。<br>
         运行 <code>node server.js</code> 并配置 hooks 后，<br>
         这里会实时显示每个窗口的进度，<br>代码跑完会提醒你 ✨
