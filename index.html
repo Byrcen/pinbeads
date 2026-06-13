@@ -1472,8 +1472,8 @@ function confetti(){
 const Audio=(function(){
   let ctx=null, on=loadSettings().sound!==false;
   function ac(){ if(!ctx) ctx=new (window.AudioContext||window.webkitAudioContext)(); if(ctx.state==='suspended')ctx.resume(); return ctx; }
-  function tone(freq, dur, type='triangle', vol=0.18, slideTo=null, force=false){
-    if(!on && !force) return; const c=ac(), o=c.createOscillator(), g=c.createGain();
+  function tone(freq, dur, type='triangle', vol=0.18, slideTo=null){
+    if(!on) return; const c=ac(), o=c.createOscillator(), g=c.createGain();
     o.type=type; o.frequency.setValueAtTime(freq,c.currentTime);
     if(slideTo)o.frequency.exponentialRampToValueAtTime(slideTo,c.currentTime+dur);
     g.gain.setValueAtTime(vol,c.currentTime); g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+dur);
@@ -1493,7 +1493,7 @@ const Audio=(function(){
   return {
     place(){ const base=520+Math.random()*120; tone(base,0.12,'square',0.10, base*0.7); },        // 8-bit：方波+降量
     complete(){ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,0.18,'square',0.11),i*110)); },
-    ccAlert(){ tone(880,0.16,'square',0.20,880,true); setTimeout(()=>tone(660,0.28,'square',0.20,null,true),150); }, // 代码完成提醒：永远响，不被拼豆静音牵连
+    ccAlert(){ tone(880,0.16,'square',0.20,880); setTimeout(()=>tone(660,0.28,'square',0.20,null),150); }, // 代码完成提醒：受静音键管控（静音后仍有桌面通知/横幅/标题闪烁兜底）
     iron(){ noise(1.6,0.07,3200); },                                   // ⑤ 熨烫滋滋（纯噪声，不动）
     cool(){ tone(660,0.25,'square',0.09,440); setTimeout(()=>tone(300,0.12,'square',0.12),180); }, // ⑥ 冷却“叮”+压平
     flip(){ noise(0.32,0.12,1400,400); },                              // ⑦ 翻面 whoosh（纯噪声，不动）
