@@ -159,6 +159,9 @@
   .toolbar input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; appearance:none;
     width:16px; height:22px; background:var(--panel-2); border:3px solid var(--line);
     box-shadow:inset 0 2px 0 var(--bevel-light), inset 0 -2px 0 var(--bevel-dark); cursor:pointer}
+  .toolbar input[type=range]::-moz-range-thumb{width:16px; height:22px; background:var(--panel-2);
+    border:3px solid var(--line); border-radius:0;
+    box-shadow:inset 0 2px 0 var(--bevel-light), inset 0 -2px 0 var(--bevel-dark); cursor:pointer}
   .progress-wrap{flex:1; min-width:120px; height:14px; background:var(--chip); border:2px solid var(--line);
     border-radius:0; overflow:hidden; box-shadow:inset 2px 2px 0 var(--bevel-dark)}
   .progress-bar{height:100%; width:0; border-radius:0;
@@ -243,7 +246,10 @@
   .fp-hint{font-size:12px; color:var(--muted); padding:2px 4px 6px}
   .fp-item{display:flex; align-items:center; gap:8px; padding:6px 6px; border-radius:0; cursor:pointer; font-size:13px}
   .fp-item:hover{background:var(--soft-2)}
-  .fp-item input{accent-color:var(--accent); width:15px; height:15px}
+  .fp-item input{appearance:none; -webkit-appearance:none; width:14px; height:14px; flex:none; cursor:pointer;
+    border:2px solid var(--line); background:var(--panel-2); margin:0}
+  .fp-item input:checked{background:var(--accent);
+    box-shadow:inset 2px 2px 0 rgba(255,255,255,.35), inset -2px -2px 0 rgba(0,0,0,.2)}
   .fp-clear{margin-top:6px; width:100%; border:2px solid var(--line); background:var(--panel-2); color:var(--muted);
     border-radius:0; padding:6px; font-size:12px; cursor:pointer}
   .fp-clear:hover{border-color:var(--accent); color:var(--accent)}
@@ -401,6 +407,12 @@
   /* 像素图标：12×12 整数 rect 拼画，currentColor 继承按钮文字色 */
   .pi{width:15px; height:15px; flex:none; display:inline-block; vertical-align:-2px}
   .tool .pi{width:16px; height:16px; vertical-align:-3px}
+  /* 像素滚动条：木质拇指 + 凹槽轨道（Firefox 走 scrollbar-color 回退） */
+  ::-webkit-scrollbar{width:12px; height:12px}
+  ::-webkit-scrollbar-track{background:var(--chip)}
+  ::-webkit-scrollbar-thumb{background:var(--line); border:2px solid var(--chip)}
+  ::-webkit-scrollbar-corner{background:var(--chip)}
+  html{scrollbar-color:var(--line) var(--chip)}
 </style>
 </head>
 <body>
