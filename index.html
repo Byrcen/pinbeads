@@ -1491,13 +1491,13 @@ const Audio=(function(){
     src.connect(f).connect(g).connect(c.destination); src.start(); src.stop(c.currentTime+dur);
   }
   return {
-    place(){ const base=520+Math.random()*120; tone(base,0.12,'triangle',0.16, base*0.7); },
-    complete(){ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,0.18,'sine',0.16),i*110)); },
-    ccAlert(){ tone(880,0.16,'sine',0.28,880,true); setTimeout(()=>tone(660,0.28,'sine',0.28,null,true),150); }, // 代码完成提醒：永远响，不被拼豆静音牵连
-    iron(){ noise(1.6,0.07,3200); },                                   // ⑤ 熨烫滋滋
-    cool(){ tone(660,0.25,'sine',0.12,440); setTimeout(()=>tone(300,0.12,'sine',0.16),180); }, // ⑥ 冷却“叮”+压平
-    flip(){ noise(0.32,0.12,1400,400); },                              // ⑦ 翻面 whoosh
-    peel(){ noise(0.35,0.13,2600,900); setTimeout(()=>tone(720,0.1,'sine',0.2,1300),240); },   // ⑧ 撕拉+啵
+    place(){ const base=520+Math.random()*120; tone(base,0.12,'square',0.10, base*0.7); },        // 8-bit：方波+降量
+    complete(){ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,0.18,'square',0.11),i*110)); },
+    ccAlert(){ tone(880,0.16,'square',0.20,880,true); setTimeout(()=>tone(660,0.28,'square',0.20,null,true),150); }, // 代码完成提醒：永远响，不被拼豆静音牵连
+    iron(){ noise(1.6,0.07,3200); },                                   // ⑤ 熨烫滋滋（纯噪声，不动）
+    cool(){ tone(660,0.25,'square',0.09,440); setTimeout(()=>tone(300,0.12,'square',0.12),180); }, // ⑥ 冷却“叮”+压平
+    flip(){ noise(0.32,0.12,1400,400); },                              // ⑦ 翻面 whoosh（纯噪声，不动）
+    peel(){ noise(0.35,0.13,2600,900); setTimeout(()=>tone(720,0.1,'square',0.14,1300),240); },   // ⑧ 撕拉+啵
     toggle(){ on=!on; const st=loadSettings(); st.sound=on; saveSettings(st); if(on)ac(); return on; },
     isOn(){return on;}
   };
