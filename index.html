@@ -70,7 +70,7 @@
     --peg-dot:rgba(255,225,180,.07);
     --cell-target:53,44,35;
     --cell-stroke:rgba(255,225,180,.12);
-    --cell-text:rgba(255,225,180,.40);
+    --cell-text:rgba(255,228,186,.62);
     --bead-glow:rgba(255,170,110,.55);
     --toast-bg:#1f1409; --toast-ink:#f0dfc0;
   }
@@ -118,6 +118,7 @@
     border:3px solid var(--line); background:var(--panel-2); color:var(--ink); border-radius:0;
     padding:6px 12px; cursor:pointer; font-size:13px; display:inline-flex; gap:6px; align-items:center;
     box-shadow:inset 0 2px 0 var(--bevel-light), inset 0 -2px 0 var(--bevel-dark), var(--shadow);
+    transition:border-color .12s, color .12s, background-color .12s;   /* 只过渡配色，按下位移保持脆感 */
   }
   .icon-btn:hover{border-color:var(--accent2); color:var(--accent)}
   .icon-btn:active{transform:translate(3px,3px);
@@ -127,7 +128,8 @@
   .tool-group{display:inline-flex; border:3px solid var(--line); border-radius:0;
     background:var(--chip); box-shadow:var(--shadow)}
   .tool-group .tool{border:0; background:transparent; color:var(--ink); cursor:pointer;
-    padding:7px 12px; font-size:15px; line-height:1; border-left:3px solid var(--line)}
+    padding:7px 12px; font-size:15px; line-height:1; border-left:3px solid var(--line);
+    transition:background-color .12s, box-shadow .12s, color .12s}
   .tool-group .tool:first-child{border-left:0}
   .tool-group .tool:hover{background:var(--soft)}
   .tool-group .tool.active{background:var(--soft); box-shadow:inset 0 0 0 3px var(--accent2)}  /* 选中格金框 */
@@ -175,11 +177,12 @@
   .palette{display:flex; gap:10px; padding:12px 16px 14px; border-top:3px solid var(--line);
     background:linear-gradient(180deg, var(--chip), var(--soft));
     box-shadow:inset 0 3px 0 var(--bevel-dark), inset 0 -2px 0 var(--bevel-light);
-    overflow-x:auto}
+    flex-wrap:wrap; align-content:flex-start; max-height:154px; overflow-y:auto}  /* 色多换行（最多约两行后滚动），不再横向找色 */
   .swatch{
     --c:#ccc; min-width:56px; border:3px solid var(--line); border-radius:0; padding:7px 4px 6px;
     cursor:pointer; background:var(--chip); text-align:center; position:relative; user-select:none;
     box-shadow:inset 2px 2px 0 var(--bevel-dark), inset -2px -2px 0 var(--bevel-light);
+    transition:border-color .12s, background-color .12s;
   }
   .swatch:hover{border-color:var(--accent2)}
   .swatch .chip{width:30px; height:30px; border-radius:50%; margin:0 auto 4px; background:var(--c);
@@ -238,7 +241,8 @@
   /* 筛选 */
   .head-actions{margin-left:auto; display:flex; gap:6px; flex:none}
   .filter-btn{border:2px solid var(--line); background:var(--panel-2); color:var(--muted);
-    border-radius:0; padding:4px 10px; font-size:12px; cursor:pointer; white-space:nowrap}
+    border-radius:0; padding:4px 10px; font-size:12px; cursor:pointer; white-space:nowrap;
+    transition:border-color .12s, color .12s, background-color .12s}
   .filter-btn:hover{border-color:var(--accent2); color:var(--accent)}
   .filter-btn.on{background:var(--accent); color:#fff; border-color:var(--line)}
   .filterpop{margin:0 12px 4px; border:3px solid var(--line); border-radius:0; background:var(--panel-2);
@@ -414,6 +418,31 @@
   ::-webkit-scrollbar-thumb{background:var(--line); border:2px solid var(--chip)}
   ::-webkit-scrollbar-corner{background:var(--chip)}
   html{scrollbar-color:var(--line) var(--chip)}
+
+  /* —— focus-visible：键盘导航可见焦点（鼠标点击不触发）—— */
+  .icon-btn:focus-visible, .tool:focus-visible, .filter-btn:focus-visible,
+  .seg button:focus-visible, .sc-back:focus-visible, .wd-actions button:focus-visible{
+    outline:3px solid var(--accent2); outline-offset:2px}
+  .toolbar input[type=range]:focus-visible{outline:3px solid var(--accent2); outline-offset:3px}
+
+  /* —— 窄屏 / 分屏：CC 面板移到画布下方，顶栏换行不溢出 —— */
+  @media (max-width:680px){
+    .app{grid-template-columns:1fr; grid-template-rows:auto 1fr auto}
+    header{grid-column:1; flex-wrap:wrap; gap:8px 10px; padding:8px 10px}
+    header .spacer{display:none}
+    aside{border-left:0; border-top:3px solid var(--line); max-height:40vh}
+  }
+  @media (max-width:520px){
+    header .sub{display:none}
+    .icon-btn{padding:6px 9px; font-size:12px}
+  }
+
+  /* —— 尊重系统「减少动态效果」偏好：弱化 CSS 动画/过渡（JS 动画另在脚本里降级）—— */
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{
+      animation-duration:.001ms !important; animation-iteration-count:1 !important;
+      transition-duration:.001ms !important}
+  }
 </style>
 </head>
 <body>
@@ -904,6 +933,8 @@ function hashStr(s){let h=5381;for(let i=0;i<s.length;i++)h=(h*33^s.charCodeAt(i
 /* ============================== 主题（白天/夜间）============================== */
 const THEME_KEY='pinbeads:theme';
 function systemPrefersNight(){ try{ return matchMedia('(prefers-color-scheme: dark)').matches; }catch(_){ return false; } }
+// 系统「减少动态效果」偏好：JS 动画（落豆/撒花/熨烫/抖动/主题淡入）据此降级
+function reduceMotion(){ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(_){ return false; } }
 function currentTheme(){ return document.documentElement.getAttribute('data-theme')==='night'?'night':'day'; }
 function applyTheme(t, persist){
   document.documentElement.setAttribute('data-theme', t==='night'?'night':'day');
@@ -932,10 +963,19 @@ const fx=document.getElementById('fx'), fctx=fx.getContext('2d');
 const stage=document.getElementById('stage');
 let DPR=Math.max(1, window.devicePixelRatio||1);
 
+let _lastStageW=0, _lastStageH=0;
 function resizeCanvas(){
   DPR=Math.max(1,window.devicePixelRatio||1);
-  const w=Math.max(1, Math.round(stage.clientWidth*DPR));
-  const h=Math.max(1, Math.round(stage.clientHeight*DPR));
+  const cw=stage.clientWidth, ch=stage.clientHeight;
+  // 舞台 CSS 尺寸变化时，按变化量补偿偏移，保持画面中心点不动
+  // —— 窗口缩放 / 分屏切换不再让图案卡在旧位置，也不覆盖用户的手动缩放与平移
+  if(state.pattern && _lastStageW && (cw!==_lastStageW || ch!==_lastStageH)){
+    state.view.ox += (cw-_lastStageW)/2;
+    state.view.oy += (ch-_lastStageH)/2;
+  }
+  _lastStageW=cw; _lastStageH=ch;
+  const w=Math.max(1, Math.round(cw*DPR));
+  const h=Math.max(1, Math.round(ch*DPR));
   for(const c of [board,fx]){ if(c.width!==w)c.width=w; if(c.height!==h)c.height=h; }
   draw();
 }
@@ -952,6 +992,8 @@ if(window.ResizeObserver){
 function watchDPR(){ try{ matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`)
   .addEventListener('change', ()=>{ resizeCanvas(); watchDPR(); }, {once:true}); }catch(_){} }
 watchDPR();
+// 跨越窄屏断点（单列 ⇄ 双列布局重排）时重新适配，避免盘面错位
+try{ matchMedia('(max-width:680px)').addEventListener('change', ()=>{ if(state.pattern) requestAnimationFrame(fit); }); }catch(_){}
 
 /* ============================== Board 渲染 ============================== */
 function mix(hex, t){ return mixTo(hex, [255,255,255], t); }   // 朝白混合 = mixTo 的特例（mixTo 为函数声明，已提升可前向调用）
@@ -1244,7 +1286,7 @@ let painting=false, panning=false, panStart=null, spacePan=false;
 const pointers=new Map(); let pinch=null;
 function localXY(e){ const r=board.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
 board.addEventListener('pointerdown', e=>{
-  if(state.forging) return;                 // 成型动画期间锁定输入
+  if(state.forging){ Forge.skip(); return; }   // 成型动画进行中：点一下跳过，不放豆
   board.setPointerCapture(e.pointerId);
   pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
   if(pointers.size===2){                    // 双指 → 捏合缩放，先停止绘制
@@ -1308,7 +1350,7 @@ function tryPlace(cx,cy){
   refreshPalette(); refreshProgress(); autoAdvanceColor();
   if(isComplete()) onComplete();
 }
-function shakeBoard(){ stage.animate(
+function shakeBoard(){ if(reduceMotion()) return; stage.animate(
   [{transform:'translateX(0)'},{transform:'translateX(-3px)'},{transform:'translateX(3px)'},{transform:'translateX(0)'}],
   {duration:140}); }
 // 放豆“落下”动画：弹跳缓动 + 触地压扁
@@ -1319,7 +1361,7 @@ function easeOutBounce(x){ const n1=7.5625,d1=2.75;
   if(x<2/d1){ x-=1.5/d1; return n1*x*x+0.75; }
   if(x<2.5/d1){ x-=2.25/d1; return n1*x*x+0.9375; }
   x-=2.625/d1; return n1*x*x+0.984375; }
-function popBead(i){ drops[i]=performance.now(); if(!dropRAF) dropLoop(); }
+function popBead(i){ if(reduceMotion()){ draw(); return; } drops[i]=performance.now(); if(!dropRAF) dropLoop(); }
 function dropLoop(){ draw(); if(Object.keys(drops).length) dropRAF=requestAnimationFrame(dropLoop); else { dropRAF=null; draw(); } }
 function clearDrops(){ for(const k in drops) delete drops[k]; if(dropRAF){ cancelAnimationFrame(dropRAF); dropRAF=null; } }  // 切图案/熨烫前收尾落下动画
 
@@ -1430,14 +1472,20 @@ const Forge=(function(){
     // 定型并收藏后，把模板退回「未拼」，方便把同一张图再拼一次（先让成品+撒花展示一会儿）
     setTimeout(()=>{ if(state.forged) clearBoard({banner:'✨ 已收进作品 · 模板已复位，可再拼一次'}); }, 3200);
   }
+  let skipReq=false;
+  function skip(){ if(state.forging) skipReq=true; }   // 动画进行中：点画面 / 按 Esc·回车 即跳到成型
   function run(){
     if(state.forging || !state.pattern || !isComplete() || state.forged) return;
     clearDrops();   // 收尾任何进行中的落下动画，避免熨烫期间双 rAF 与豆子残留弹跳
     clearUndo();    // 熨烫定型不可逆：清空撤销栈，杜绝跨成型的脏撤销
+    if(reduceMotion()){ finish(); return; }   // 减少动态效果：直接成型，不放 6 秒动画
+    skipReq=false;
     state.forging=true; updateIronBtn();
+    showBanner('🔥 熨烫定型中…（点一下画面可跳过）');
     const sounded={}; const start=performance.now();
     state.anim={fuseX:null,cool:0,press:0,flip:0,peel:0};
     (function loop(now){
+      if(skipReq){ skipReq=false; finish(); return; }   // 跳过：直接落到成型收尾
       const t=now-start, a=state.anim, p=state.pattern;
       if(t<T.iron[1]){ a.fuseX=ease(seg(t,T.iron[0],T.iron[1]))*(p.width+0.001); if(!sounded.iron){sounded.iron=1;Audio.iron();} }
       else a.fuseX=p.width+1;
@@ -1449,9 +1497,10 @@ const Forge=(function(){
       if(t<T.settle[1]) requestAnimationFrame(loop); else finish();
     })(start);
   }
-  return { run };
+  return { run, skip };
 })();
 function confetti(){
+  if(reduceMotion()){ fctx.clearRect(0,0,fx.width,fx.height); draw(); return; }   // 减少动态效果：略过撒花
   const cols=['#ff8a5b','#ffd23f','#06d6a0','#3aa0ff','#ff5a7a','#c44dff'];
   const parts=Array.from({length:140},()=>({
     x:Math.random()*fx.width, y:-Math.random()*fx.height*0.3,
@@ -2042,6 +2091,7 @@ function selectColor(idx){ const p=state.pattern; if(!p||idx<0||idx>=p.palette.l
 function cycleColor(dir){ const p=state.pattern; if(!p)return; const n=p.palette.length; selectColor((state.active+dir+n)%n); }
 document.addEventListener('keydown', e=>{
   if(e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+  if(state.forging){ if(e.key==='Escape'||e.key==='Enter'||e.code==='Space'){ e.preventDefault(); Forge.skip(); } return; }  // 成型动画进行中：Esc/回车/空格跳过
   if(e.key==='Escape'){ closeModals(); document.getElementById('showcase').classList.remove('show'); return; }
   if((e.ctrlKey||e.metaKey) && (e.key==='z'||e.key==='Z')){ e.preventDefault(); undo(); return; }
   if(e.code==='Space'){ if(!spacePan){ spacePan=true; document.body.style.cursor='grab'; } e.preventDefault(); return; }
@@ -2098,7 +2148,13 @@ function boot(){
   (function(){
     applyTheme(currentTheme(), false);   // 同步按钮图标 + 首次 applyThemeVars
     const tb=document.getElementById('btnTheme');
-    if(tb) tb.onclick=()=> applyTheme(currentTheme()==='night'?'day':'night', true);
+    if(tb) tb.onclick=()=>{
+      const next=currentTheme()==='night'?'day':'night';
+      const appEl=document.querySelector('.app');
+      if(reduceMotion() || !appEl || !appEl.animate){ applyTheme(next,true); return; }
+      appEl.animate([{opacity:1},{opacity:.45},{opacity:1}],{duration:260,easing:'ease-in-out'});
+      setTimeout(()=>applyTheme(next,true),120);   // 在最暗处切换，淡入淡出掩盖木纹渐变的硬跳
+    };
   })();
   resizeCanvas();
   CCPanel.connect();
